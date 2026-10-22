@@ -15,14 +15,6 @@ It's built so that Claude, Codex, or any AI coding agent can write the clip for 
 
 Both films below are a single JSON file each, played by the library. All apps, companies, and people in them are made up.
 
-### Closed deal → automation → team chat
-
-Three screens side by side: a CRM record, a node-based automation workflow, and a team chat, joined by data packets.
-
-[![Closed deal to team channel](https://raw.githubusercontent.com/priyabratasahoo21/clipscript/main/media/closed-won.gif)](https://github.com/priyabratasahoo21/clipscript/blob/main/media/closed-won.mp4)
-
-[Watch the MP4](https://github.com/priyabratasahoo21/clipscript/blob/main/media/closed-won.mp4) · [Read the clip](https://github.com/priyabratasahoo21/clipscript/blob/main/examples/closed-won/closed-won.clip.json)
-
 ### AI assistant → connector → accounting app
 
 One screen at a time: an AI assistant (light mode) uses a connector to create and send invoices, then the accounting app (dark mode, in a browser window) slides in as the chat leaves.
@@ -30,6 +22,14 @@ One screen at a time: an AI assistant (light mode) uses a connector to create an
 [![Invoices sent from a chat](https://raw.githubusercontent.com/priyabratasahoo21/clipscript/main/media/claw-fastbooks.gif)](https://github.com/priyabratasahoo21/clipscript/blob/main/media/claw-fastbooks.mp4)
 
 [Watch the MP4](https://github.com/priyabratasahoo21/clipscript/blob/main/media/claw-fastbooks.mp4) · [Read the clip](https://github.com/priyabratasahoo21/clipscript/blob/main/examples/claw-fastbooks/claw-fastbooks.clip.json)
+
+### Closed deal → automation → team chat
+
+Three screens side by side: a CRM record, a node-based automation workflow, and a team chat, joined by data packets.
+
+[![Closed deal to team channel](https://raw.githubusercontent.com/priyabratasahoo21/clipscript/main/media/closed-won.gif)](https://github.com/priyabratasahoo21/clipscript/blob/main/media/closed-won.mp4)
+
+[Watch the MP4](https://github.com/priyabratasahoo21/clipscript/blob/main/media/closed-won.mp4) · [Read the clip](https://github.com/priyabratasahoo21/clipscript/blob/main/examples/closed-won/closed-won.clip.json)
 
 ## Who it's for
 
