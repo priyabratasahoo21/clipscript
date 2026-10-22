@@ -52,6 +52,7 @@
     "bin",
     "cli",
     "src",
+    "docs",
     "schema",
     "examples",
     "index.d.ts",
