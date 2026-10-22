@@ -16,7 +16,7 @@
             <p class="eyebrow">Cueflick example · one screen at a time</p>
             <h1>Invoices sent from a chat</h1>
             <p class="lede">Claw, an AI assistant, uses its Fastbooks connector to create and email three invoices. Claw is shown
-                in light mode; Fastbooks Online enters in a dark browser window as Claw leaves. The film is one file:
+                in light mode; Fastbooks Online launches in a dark browser window as Claw minimizes. The film is one file:
                 <a href="claw-fastbooks.clip.json">claw-fastbooks.clip.json</a>.</p>
         </header>
 
@@ -26,7 +26,7 @@
             <h2>What this example uses</h2>
             <p>The <code>assistant-connector</code> template with the <code>stage</code> layout; the <code>ai-chat</code> and
                 <code>browser-app</code> surfaces; a per-screen <code>"mode"</code>; a hidden screen that arrives with
-                <code>{ "enter": "books", "from": "right" }</code>; and <code>{ "exit": "claw", "to": "left" }</code>.</p>
+                <code>{ "enter": "books", "from": "launch" }</code>; <code>{ "exit": "claw", "to": "minimize" }</code>; and a camera that follows the action and punches in on clicks.</p>
             <p><a href="../">All examples</a></p>
         </section>
     </main>

@@ -22,7 +22,7 @@
   "design": {
     "mode": "dark",
     "accent": "#e07a5f",
-    "camera": { "zoom": 1.25, "speed": 1 },
+    "camera": { "zoom": 1.25, "speed": 1.1, "ease": "snappy", "follow": true, "punch": { "amount": 1.25, "hold": 700 } },
     "pace": 1
   },
 
@@ -76,6 +76,7 @@
       "title": "Connect Fastbooks",
       "narration": "Jordan connects Claw to Fastbooks in one click.",
       "focus": "claw",
+      "async": true,
       "steps": [
         { "connect": "claw.connector:fastbooks" }
       ]
@@ -84,6 +85,7 @@
       "title": "Ask Claw",
       "narration": "Then asks Claw to invoice the month's completed jobs.",
       "focus": "claw",
+      "async": true,
       "steps": [
         { "prompt": "Create invoices for October's completed jobs and email them to each customer." },
         { "think": 1400 }
@@ -93,6 +95,7 @@
       "title": "Claw uses the connector",
       "narration": "Claw finds the jobs, creates three invoices, and sends them through Fastbooks.",
       "focus": "claw",
+      "async": true,
       "steps": [
         { "tool": "list_completed_jobs", "connector": "fastbooks", "input": { "month": "2026-10" }, "result": "3 completed jobs · Acme Corp, Globex, Initech", "ms": 1100 },
         { "tool": "create_invoice", "connector": "fastbooks", "input": { "customer": "Acme Corp", "amount": 4800 }, "result": "Invoice 1042 · $4,800.00", "ms": 900 },
@@ -106,9 +109,10 @@
       "title": "In Fastbooks",
       "narration": "In Fastbooks Online, the new invoices are already there, marked Sent.",
       "focus": "books",
+      "async": true,
       "steps": [
-        { "enter": "books", "from": "right" },
-        { "exit": "claw", "to": "left" },
+        { "enter": "books", "from": "launch" },
+        { "exit": "claw", "to": "minimize" },
         { "add": "books.row:1042" },
         { "add": "books.row:1043" },
         { "add": "books.row:1044" },
@@ -120,6 +124,7 @@
       "title": "Recap",
       "narration": "One request in Claw, three invoices in Fastbooks, no copy-paste.",
       "focus": "all",
+      "async": true,
       "steps": [
         { "wait": 2400 }
       ]
