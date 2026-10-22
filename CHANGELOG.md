@@ -12,6 +12,7 @@
 - **New example:** *Invoices sent from a chat*.
 - **`clipscript export`:** one self-contained HTML file to share or host anywhere.
 - **`snapshot --poster`** and **`--offline`**.
+- **`init --ai`** writes guidance for any AI agent: `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`.
 - **`clipscript:ready`** event and `player.readyChapter`, so tools can wait for a static chapter.
 - **Poster slot:** `<img slot="poster">` shows before playback and when JavaScript is off.
 - **Surfaces can ship their own CSS** (`styles`), declare screen keys (`keys`), and check step order (`order`).

@@ -4385,7 +4385,7 @@ ${surfaceStyles()}`;
 }
 function errorPanel(errors, source) {
   return h("div", { class: "cs-error", role: "alert" }, [
-    h("strong", { text: `clipscript: ${source} can't be played` }),
+    h("strong", { text: `ClipScript: ${source} can't be played` }),
     h("ul", {}, errors.map((item) => h("li", { text: `${item.path || "(root)"}: ${item.message}${item.hint ? ` ${item.hint}` : ""}` })))
   ]);
 }

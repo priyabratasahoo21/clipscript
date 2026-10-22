@@ -211,16 +211,16 @@ export async function initCommand([dir = '.'], { ai }) {
     await writeFile(clipPath, `${JSON.stringify(clip, null, 2)}\n`, { flag: 'wx' });
     console.log(`Created ${clipPath}`);
     if (ai) {
-        const block = `\n${AI_MARKER}\n## Product films (clipscript)\n\nTo make or edit a product film, read \`node_modules/clipscript/llms.txt\` first. Write clips as \`*.clip.json\`, then run \`npx clipscript validate <file>\` and fix every error, and \`npx clipscript snapshot <file>\` and look at each PNG before finishing.\n`;
-        for (const name of ['CLAUDE.md', 'AGENTS.md']) {
+        const block = `\n${AI_MARKER}\n## Product films (ClipScript)\n\nTo make or edit a product film, read \`node_modules/clipscript/llms.txt\` first. Write clips as \`*.clip.json\`, then run \`npx clipscript validate <file>\` and fix every error, and \`npx clipscript snapshot <file>\` and look at each PNG before finishing.\n`;
+        for (const name of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
             const path = join(base, name);
             const current = existsSync(path) ? await readFile(path, 'utf8') : '';
             if (current.includes(AI_MARKER)) {
-                console.log(`${name} already mentions clipscript`);
+                console.log(`${name} already mentions ClipScript`);
                 continue;
             }
             await appendFile(path, block);
-            console.log(`Added clipscript guidance to ${path}`);
+            console.log(`Added ClipScript guidance to ${path}`);
         }
     }
     console.log('Next: npx clipscript preview film.clip.json');

@@ -1,8 +1,8 @@
-# clipscript
+# ClipScript
 
 **Product films for software, written as data.**
 
-Write one JSON file that describes a workflow across app screens. clipscript plays it on any web page as a film, with a moving camera, a cursor, subtitles, and chapters, or turns it into a video.
+Write one JSON file that describes a workflow across app screens. ClipScript plays it on any web page as a film, with a moving camera, a cursor, subtitles, and chapters, or turns it into a video.
 
 ```html
 <script src="https://unpkg.com/clipscript/dist/clipscript.min.js" defer></script>
@@ -30,7 +30,7 @@ Each film is one JSON file. All apps, companies, and people in them are made up.
 - **Product and developer-tool teams:** product films for websites, docs, and READMEs, without screen recording.
 - **Integration builders:** show how data moves between apps.
 - **Consultants and sales engineers:** explain a workflow before it's built, or make a film per customer.
-- **Anyone with an AI assistant:** describe the film, and Claude or Codex writes it.
+- **Anyone with an AI agent:** describe the film, and your agent writes it. It works with Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, or any agent that can read files and run commands.
 
 ## Quick start
 
@@ -48,11 +48,11 @@ import 'clipscript';
 
 It works the same in plain HTML, React, Vue, Svelte, or any other framework.
 
-## Make a film with Claude or Codex
+## Make a film with any AI agent
 
-1. Run `npx clipscript init --ai` in your project.
-2. Ask in plain English, for example: *"Make a clipscript film where our assistant creates three invoices in the accounting app. Validate it and check the snapshots."*
-3. The AI writes the clip, checks it with `npx clipscript validate`, and fixes anything it finds.
+1. Run `npx clipscript init --ai` in your project. It adds a short pointer to the authoring guide in `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`, which most agents read automatically. For any other agent, point it at `node_modules/clipscript/llms.txt`.
+2. Ask in plain English, for example: *"Make a ClipScript film where our assistant creates three invoices in the accounting app. Validate it and check the snapshots."*
+3. The agent writes the clip, checks it with `npx clipscript validate`, and fixes anything it finds.
 
 ## Share a film
 

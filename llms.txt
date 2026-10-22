@@ -1,6 +1,8 @@
-# clipscript — authoring guide for AI agents
+# ClipScript — authoring guide for AI agents
 
-clipscript plays "product films" for software: video-like illustrations of a workflow
+For any AI coding agent (Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, and others).
+
+ClipScript plays "product films" for software: video-like illustrations of a workflow
 moving across app screens. You write one JSON file (a clip script); the library plays it.
 You never write animation code, CSS, or HTML.
 

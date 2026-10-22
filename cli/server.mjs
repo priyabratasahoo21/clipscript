@@ -51,7 +51,7 @@ function previewPage({ reload, offline }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>clipscript preview</title>
+<title>ClipScript Preview</title>
 ${offline ? '' : FONTS}
 <style>
   body { margin: 0; background: #07080b; color: #e8ebf1; font-family: Inter, system-ui, sans-serif; }

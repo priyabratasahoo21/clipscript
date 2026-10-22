@@ -1,4 +1,4 @@
-# clipscript reference
+# ClipScript reference
 
 Everything beyond the [README](../README.md): the clip format, screens, layouts, the element and JavaScript API, the CLI, extending the library, and development.
 

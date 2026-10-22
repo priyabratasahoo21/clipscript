@@ -16,7 +16,7 @@ import {
     validateCommand
 } from '../cli/commands.mjs';
 
-const HELP = `clipscript — product films for software, written as data
+const HELP = `ClipScript — product films for software, written as data
 
 Usage
   clipscript validate <file...> [--json]       check clip scripts; errors include a path and a hint
@@ -24,7 +24,7 @@ Usage
   clipscript snapshot <file> [--out dir]       save one PNG per chapter (needs Playwright); --poster poster.png too
   clipscript render <file> [--out film.mp4]    record the film to .mp4, .gif, or .webm (needs Playwright; ffmpeg for mp4/gif)
   clipscript export <file> [--out film.html]   one self-contained HTML file to share or host anywhere
-  clipscript init [dir] [--ai]                 create film.clip.json; --ai adds guidance to CLAUDE.md and AGENTS.md
+  clipscript init [dir] [--ai]                 create film.clip.json; --ai adds AI-agent guidance (AGENTS.md, CLAUDE.md, GEMINI.md)
   clipscript catalog [--json]                  list templates, surfaces, parts, and actions
   clipscript guide                             print the authoring guide for AI agents (llms.txt)
   clipscript demo                              serve the bundled examples

@@ -1,7 +1,7 @@
 {
   "name": "clipscript",
   "version": "0.2.0",
-  "description": "Product films for software, written as data. Describe a workflow across app screens in a JSON clip script and clipscript plays it as a video-like illustration, or renders it to video. Built for AI authors.",
+  "description": "ClipScript: product films for software, written as data. Describe a workflow across app screens in a JSON clip script and ClipScript plays it as a video-like film, or renders it to video. Any AI agent can write one.",
   "keywords": [
     "product-film",
     "demo",
@@ -16,7 +16,12 @@
     "llm",
     "claude",
     "codex",
-    "mcp"
+    "mcp",
+    "ai-agents",
+    "agents-md",
+    "cursor",
+    "copilot",
+    "gemini"
   ],
   "homepage": "https://github.com/priyabratasahoo21/clipscript#readme",
   "bugs": {
