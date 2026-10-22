@@ -3,6 +3,7 @@
  * Movement runs on the playback timeline, so pause and pace apply to it.
  */
 
+import { STOP } from './constants.js';
 import { h, rectIn, s } from './dom.js';
 import { easeInOut } from './timeline.js';
 
@@ -10,14 +11,17 @@ const MOVE_MS = 650;
 const CLICK_MS = 260;
 
 export class Cursor {
-    constructor(world) {
+    /** @param {{hidden?: boolean}} [options] hidden: touch-first films never show the pointer */
+    constructor(world, { hidden = false } = {}) {
         this.world = world;
-        this.el = h('div', { class: 'cs-cursor', 'aria-hidden': 'true' }, [
+        this.hidden = hidden;
+        this.el = h('div', { class: 'cf-cursor', 'aria-hidden': 'true' }, [
             s('svg', { viewBox: '0 0 24 24', width: '26', height: '26' }, [
                 s('path', { d: 'M4 2l15 9.5-6.6 1.4L16 21l-3 1.5-3.7-8.2L4 18.6z' })
             ]),
-            h('span', { class: 'cs-cursor-ring' })
+            h('span', { class: 'cf-cursor-ring' })
         ]);
+        if (hidden) this.el.classList.add('cf-cursor-off');
         this.x = 1200;
         this.y = 820;
         this.place();
@@ -32,7 +36,7 @@ export class Cursor {
     async moveTo(target, ctx, { dx = 0.5, dy = 0.5 } = {}) {
         const rect = rectIn(this.world, target);
         const goal = { x: rect.x + rect.w * dx, y: rect.y + rect.h * dy };
-        this.el.classList.add('cs-visible');
+        this.el.classList.add('cf-visible');
         if (ctx.fast) {
             Object.assign(this, goal);
             this.place();
@@ -49,13 +53,19 @@ export class Cursor {
 
     async click(ctx) {
         if (ctx.fast) return;
-        this.el.classList.remove('cs-click');
+        this.el.classList.remove('cf-click');
         void this.el.offsetWidth;
-        this.el.classList.add('cs-click');
+        this.el.classList.add('cf-click');
+        // punch-in runs alongside the click; it ends on its own (or when a newer camera move takes over)
+        if (ctx.punch && ctx.player) {
+            ctx.player.camera.punchAt({ x: this.x, y: this.y }, ctx, ctx.punch).catch(error => {
+                if (error !== STOP) console.error(error);
+            });
+        }
         await ctx.wait(CLICK_MS);
     }
 
     hide() {
-        this.el.classList.remove('cs-visible');
+        this.el.classList.remove('cf-visible');
     }
 }

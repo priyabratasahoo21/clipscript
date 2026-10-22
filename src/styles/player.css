@@ -1,4 +1,4 @@
-/* clipscript player — lives inside the <clip-script> shadow root */
+/* cueflick player — lives inside the <cue-flick> shadow root */
 
 :host {
     display: block;
@@ -7,7 +7,7 @@
     container-type: inline-size;
 }
 
-.cs-mount {
+.cf-mount {
     width: 100%;
 }
 
@@ -18,92 +18,117 @@
     background: #000;
 }
 
-:host(:fullscreen) .cs-player {
+:host(:fullscreen) .cf-player {
     width: min(100%, calc((100vh - 140px) * 16 / 9));
 }
 
 /* ---------- palettes ---------- */
 
-.cs-player,
-.cs-screen[data-mode="dark"] {
-    --cs-stage: #07090d;
-    --cs-stage-top: #111624;
-    --cs-stage-glow: rgb(34 211 238 / 0.10);
-    --cs-stage-grid: rgb(255 255 255 / 0.035);
-    --cs-win: #161a22;
-    --cs-win-2: #1c212b;
-    --cs-win-3: #262c39;
-    --cs-line: #2a3141;
-    --cs-line-strong: #363f53;
-    --cs-canvas: #12151b;
-    --cs-wire: #5b6476;
-    --cs-node-bg: #232831;
-    --cs-node-border: #414a5c;
-    --cs-text: #e9ecf2;
-    --cs-dim: #9ea7b7;
-    --cs-faint: #6d768a;
-    --cs-grid: rgb(255 255 255 / 0.07);
-    --cs-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.65);
-    --cs-ok: #34d399;
-    --cs-warn: #f59e0b;
-    --cs-control-text: #c9d0dc;
+.cf-player,
+.cf-screen[data-mode="dark"] {
+    --cf-stage: #07090d;
+    --cf-stage-top: #111624;
+    --cf-stage-glow: rgb(34 211 238 / 0.10);
+    --cf-stage-grid: rgb(255 255 255 / 0.035);
+    --cf-win: #161a22;
+    --cf-win-2: #1c212b;
+    --cf-win-3: #262c39;
+    --cf-line: #2a3141;
+    --cf-line-strong: #363f53;
+    --cf-canvas: #12151b;
+    --cf-wire: #5b6476;
+    --cf-node-bg: #232831;
+    --cf-node-border: #414a5c;
+    --cf-text: #e9ecf2;
+    --cf-dim: #9ea7b7;
+    --cf-faint: #6d768a;
+    --cf-grid: rgb(255 255 255 / 0.07);
+    --cf-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.65);
+    --cf-ok: #34d399;
+    --cf-warn: #f59e0b;
+    --cf-control-text: #c9d0dc;
+    --cf-ref-bg: rgb(96 146 255 / 0.2);
+    --cf-ref-text: #9dc0ff;
+    /* the ai-chat "neutral" look */
+    --cf-n-bg: #212121;
+    --cf-n-side: #181818;
+    --cf-n-raise: #303030;
+    --cf-n-composer: #303030;
+    --cf-n-menu: #353535;
+    --cf-n-line: rgb(255 255 255 / 0.08);
+    --cf-n-line-strong: rgb(255 255 255 / 0.16);
+    --cf-n-text: #ececec;
+    --cf-n-dim: #b4b4b4;
+    --cf-n-faint: #8e8e8e;
 
-    font-family: var(--cs-font-ui);
-    color: var(--cs-text);
+    font-family: var(--cf-font-ui);
+    color: var(--cf-text);
     -webkit-font-smoothing: antialiased;
 }
 
-.cs-player[data-mode="light"],
-.cs-screen[data-mode="light"] {
-    --cs-stage: #e4e9f1;
-    --cs-stage-top: #f6f8fc;
-    --cs-stage-glow: rgb(34 211 238 / 0.14);
-    --cs-stage-grid: rgb(15 23 42 / 0.045);
-    --cs-win: #ffffff;
-    --cs-win-2: #f6f8fb;
-    --cs-win-3: #eceff4;
-    --cs-line: #e1e5ec;
-    --cs-line-strong: #cdd4df;
-    --cs-canvas: #f4f5f7;
-    --cs-wire: #a3acba;
-    --cs-node-bg: #ffffff;
-    --cs-node-border: #c5ccd8;
-    --cs-text: #1a2030;
-    --cs-dim: #5a6475;
-    --cs-faint: #8a93a4;
-    --cs-grid: rgb(15 23 42 / 0.09);
-    --cs-shadow: 0 24px 60px -18px rgb(15 23 42 / 0.25);
-    --cs-ok: #10a36e;
-    --cs-control-text: #3b4456;
+.cf-player[data-mode="light"],
+.cf-screen[data-mode="light"] {
+    --cf-stage: #e4e9f1;
+    --cf-stage-top: #f6f8fc;
+    --cf-stage-glow: rgb(34 211 238 / 0.14);
+    --cf-stage-grid: rgb(15 23 42 / 0.045);
+    --cf-win: #ffffff;
+    --cf-win-2: #f6f8fb;
+    --cf-win-3: #eceff4;
+    --cf-line: #e1e5ec;
+    --cf-line-strong: #cdd4df;
+    --cf-canvas: #f4f5f7;
+    --cf-wire: #a3acba;
+    --cf-node-bg: #ffffff;
+    --cf-node-border: #c5ccd8;
+    --cf-text: #1a2030;
+    --cf-dim: #5a6475;
+    --cf-faint: #8a93a4;
+    --cf-grid: rgb(15 23 42 / 0.09);
+    --cf-shadow: 0 24px 60px -18px rgb(15 23 42 / 0.25);
+    --cf-ok: #10a36e;
+    --cf-control-text: #3b4456;
+    --cf-ref-bg: #e6efff;
+    --cf-ref-text: #1d5fd1;
+    --cf-n-bg: #ffffff;
+    --cf-n-side: #f9f9f9;
+    --cf-n-raise: #f3f3f3;
+    --cf-n-composer: #ffffff;
+    --cf-n-menu: #ffffff;
+    --cf-n-line: #e5e5e5;
+    --cf-n-line-strong: #d0d0d0;
+    --cf-n-text: #0d0d0d;
+    --cf-n-dim: #5d5d5d;
+    --cf-n-faint: #8e8e8e;
 }
 
 /* ---------- stage and world ---------- */
 
-.cs-stage {
+.cf-stage {
     position: relative;
-    aspect-ratio: var(--cs-aspect, 16 / 9);
+    aspect-ratio: var(--cf-aspect, 16 / 9);
     overflow: hidden;
     border-radius: 16px;
     background:
-        radial-gradient(ellipse 70% 55% at 50% 0%, var(--cs-stage-glow), transparent 70%),
-        linear-gradient(180deg, var(--cs-stage-top), var(--cs-stage));
-    border: 1px solid var(--cs-line);
+        radial-gradient(ellipse 70% 55% at 50% 0%, var(--cf-stage-glow), transparent 70%),
+        linear-gradient(180deg, var(--cf-stage-top), var(--cf-stage));
+    border: 1px solid var(--cf-line);
     box-shadow: 0 40px 100px -50px rgb(0 0 0 / 0.7);
 }
 
-.cs-stage::before {
+.cf-stage::before {
     content: "";
     position: absolute;
     inset: 0;
     background-image:
-        linear-gradient(var(--cs-stage-grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--cs-stage-grid) 1px, transparent 1px);
+        linear-gradient(var(--cf-stage-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--cf-stage-grid) 1px, transparent 1px);
     background-size: 48px 48px;
     mask-image: radial-gradient(ellipse at 50% 35%, #000 25%, transparent 78%);
     pointer-events: none;
 }
 
-.cs-world {
+.cf-world {
     position: absolute;
     left: 0;
     top: 0;
@@ -113,49 +138,60 @@
     will-change: transform;
 }
 
-.cs-instant,
-.cs-instant * {
+.cf-instant,
+.cf-instant * {
     transition: none !important;
 }
 
-/* screens are placed by the template in world units (beats .cs-window's position) */
-.cs-world > .cs-screen {
+/* screens are placed by the template in world units (beats .cf-window's position) */
+.cf-world > .cf-screen {
     position: absolute;
-    color: var(--cs-text);
+    color: var(--cf-text);
     transition: filter 500ms ease;
 }
 
-.cs-world > .cs-screen.cs-off {
+.cf-world > .cf-screen.cf-off {
     visibility: hidden;
 }
 
-.cs-world > .cs-screen.cs-dimmed {
+.cf-world > .cf-screen.cf-dimmed {
     filter: brightness(0.42) saturate(0.7);
 }
 
+/* rack focus: everything but the subject goes soft */
+.cf-world > .cf-screen.cf-blurred,
+.cf-actor.cf-blurred,
+.cf-actor-shadow.cf-blurred {
+    filter: blur(var(--cf-blur, 7px)) saturate(0.85);
+}
+
+.cf-world > .cf-screen.cf-dimmed.cf-blurred {
+    filter: blur(var(--cf-blur, 7px)) brightness(0.42) saturate(0.7);
+}
+
 /* pausing freezes every CSS animation too */
-.cs-player.cs-paused *,
-.cs-player.cs-paused *::before,
-.cs-player.cs-paused *::after {
+.cf-player.cf-paused *,
+.cf-player.cf-paused *::before,
+.cf-player.cf-paused *::after {
     animation-play-state: paused !important;
 }
 
 /* ---------- app windows ---------- */
 
-.cs-window {
+.cf-window {
     position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: hidden;
-    background: var(--cs-win);
-    border: 1px solid var(--cs-line-strong);
-    border-radius: var(--cs-radius);
-    box-shadow: var(--cs-shadow), 0 30px 90px -55px var(--app);
+    background: var(--cf-win);
+    border: 1px solid var(--cf-line-strong);
+    border-radius: var(--cf-radius);
+    box-shadow: var(--cf-shadow), 0 30px 90px -55px var(--app);
     font-size: 15px;
 }
 
-.cs-body {
+.cf-body {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -163,70 +199,70 @@
     min-height: 0;
 }
 
-.cs-appbar {
+.cf-appbar {
     display: flex;
     align-items: center;
     gap: 10px;
     height: 50px;
     flex-shrink: 0;
     padding: 0 16px;
-    background: var(--cs-win-2);
-    border-bottom: 1px solid var(--cs-line);
+    background: var(--cf-win-2);
+    border-bottom: 1px solid var(--cf-line);
     box-shadow: inset 0 3px 0 var(--app);
 }
 
-.cs-appicon {
+.cf-appicon {
     display: inline-grid;
     place-items: center;
     width: 28px;
     height: 28px;
     flex-shrink: 0;
     border-radius: 8px;
-    background: var(--app, var(--cs-accent));
+    background: var(--app, var(--cf-accent));
     color: #fff;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: -0.02em;
 }
 
-.cs-appname {
+.cf-appname {
     font-size: 15px;
     font-weight: 800;
 }
 
-.cs-apptitle {
+.cf-apptitle {
     overflow: hidden;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 13.5px;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
-.cs-apptrail {
+.cf-apptrail {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-left: auto;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 12.5px;
     font-weight: 600;
 }
 
 /* ---------- crm-record ---------- */
 
-.cs-crm-head {
+.cf-crm-head {
     padding: 18px 22px 14px;
 }
 
-.cs-crm-type {
-    color: var(--cs-dim);
+.cf-crm-type {
+    color: var(--cf-dim);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
-.cs-crm-title {
+.cf-crm-title {
     overflow-wrap: anywhere;
     margin: 4px 0 14px;
     font-size: 24px;
@@ -234,17 +270,17 @@
     letter-spacing: -0.02em;
 }
 
-.cs-path {
+.cf-path {
     display: flex;
     gap: 3px;
 }
 
-.cs-path span {
+.cf-path span {
     flex: 1;
     padding: 8px 4px 8px 14px;
     overflow: hidden;
-    background: var(--cs-win-3);
-    color: var(--cs-dim);
+    background: var(--cf-win-3);
+    color: var(--cf-dim);
     font-size: 11.5px;
     font-weight: 700;
     text-align: center;
@@ -254,54 +290,54 @@
     transition: background 400ms ease, color 400ms ease;
 }
 
-.cs-path span:first-child {
+.cf-path span:first-child {
     padding-left: 6px;
     clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
 }
 
-.cs-path .cs-done {
-    background: color-mix(in srgb, var(--app) 30%, var(--cs-win-3));
-    color: var(--cs-text);
+.cf-path .cf-done {
+    background: color-mix(in srgb, var(--app) 30%, var(--cf-win-3));
+    color: var(--cf-text);
 }
 
-.cs-path .cs-current {
+.cf-path .cf-current {
     background: var(--app);
     color: #fff;
 }
 
-.cs-path .cs-won {
-    background: var(--cs-ok);
+.cf-path .cf-won {
+    background: var(--cf-ok);
     color: #fff;
 }
 
-.cs-crm-tabs {
+.cf-crm-tabs {
     display: flex;
     gap: 22px;
     padding: 0 22px;
-    border-bottom: 1px solid var(--cs-line);
-    color: var(--cs-dim);
+    border-bottom: 1px solid var(--cf-line);
+    color: var(--cf-dim);
     font-size: 13.5px;
     font-weight: 650;
 }
 
-.cs-crm-tabs span {
+.cf-crm-tabs span {
     margin-bottom: -1px;
     padding: 10px 0;
     border-bottom: 2px solid transparent;
 }
 
-.cs-crm-tabs .cs-active {
+.cf-crm-tabs .cf-active {
     border-bottom-color: var(--app);
-    color: var(--cs-text);
+    color: var(--cf-text);
 }
 
-.cs-crm-head,
-.cs-crm-tabs,
-.cs-crm-actions {
+.cf-crm-head,
+.cf-crm-tabs,
+.cf-crm-actions {
     flex-shrink: 0;
 }
 
-.cs-crm-fields {
+.cf-crm-fields {
     display: grid;
     flex-shrink: 1;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -312,116 +348,121 @@
     overflow: hidden;
 }
 
-.cs-field label {
+/* an open dropdown hangs over the activity list below instead of being clipped */
+.cf-crm-fields:has(.cf-select.cf-open) {
+    overflow: visible;
+}
+
+.cf-field label {
     display: block;
     margin-bottom: 4px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 12px;
     font-weight: 600;
 }
 
-.cs-field .cs-val {
+.cf-field .cf-val {
     font-size: 15.5px;
     font-weight: 650;
     overflow-wrap: anywhere;
 }
 
-.cs-field.cs-dirty label::after {
+.cf-field.cf-dirty label::after {
     content: " •";
     color: var(--app);
 }
 
-.cs-field.cs-editing .cs-val {
+.cf-field.cf-editing .cf-val {
     border-bottom: 2px solid var(--app);
 }
 
-.cs-select {
+.cf-select {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 7px 10px;
-    background: var(--cs-win-2);
-    border: 1px solid var(--cs-line-strong);
+    background: var(--cf-win-2);
+    border: 1px solid var(--cf-line-strong);
     border-radius: 8px;
     transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 
-.cs-select.cs-open {
+.cf-select.cf-open {
     border-color: var(--app);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--app) 25%, transparent);
 }
 
-.cs-caret {
-    color: var(--cs-dim);
+.cf-caret {
+    color: var(--cf-dim);
 }
 
-.cs-menu {
+.cf-menu {
     position: absolute;
     top: calc(100% + 6px);
     left: 0;
     right: 0;
     z-index: 5;
     padding: 4px;
-    background: var(--cs-win);
-    border: 1px solid var(--cs-line-strong);
+    background: var(--cf-win);
+    border: 1px solid var(--cf-line-strong);
     border-radius: 8px;
-    box-shadow: var(--cs-shadow);
+    box-shadow: var(--cf-shadow);
     opacity: 0;
     transform: translateY(-4px);
     pointer-events: none;
     transition: opacity 180ms ease, transform 180ms ease;
 }
 
-.cs-select.cs-open .cs-menu {
+.cf-select.cf-open .cf-menu {
     opacity: 1;
     transform: none;
 }
 
-.cs-opt {
+.cf-opt {
     padding: 7px 10px;
     border-radius: 6px;
     font-size: 14px;
 }
 
-.cs-opt.cs-hover {
+.cf-opt.cf-hover {
     background: color-mix(in srgb, var(--app) 20%, transparent);
 }
 
-.cs-activity {
+.cf-activity {
     flex: 1 1 0;
     min-height: 0;
     padding: 6px 22px 8px;
     overflow: hidden;
 }
 
-.cs-activity-label {
+.cf-activity-label {
     margin: 4px 0 10px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
-.cs-activity-list {
+.cf-activity-list {
     position: relative;
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.cs-activity-list::before {
+.cf-activity-list::before {
     content: "";
     position: absolute;
     left: 5px;
     top: 8px;
     bottom: 8px;
     width: 2px;
-    background: var(--cs-line);
+    background: var(--cf-line);
 }
 
-.cs-act {
+.cf-act {
     position: relative;
     display: flex;
     align-items: baseline;
@@ -430,132 +471,132 @@
     font-size: 13.5px;
 }
 
-.cs-act-dot {
+.cf-act-dot {
     position: absolute;
     left: 0;
     top: 10px;
     width: 12px;
     height: 12px;
-    background: var(--cs-win);
-    border: 2px solid var(--cs-line-strong);
+    background: var(--cf-win);
+    border: 2px solid var(--cf-line-strong);
     border-radius: 50%;
 }
 
-.cs-act.cs-new {
-    animation: cs-in 400ms ease;
+.cf-act.cf-new {
+    animation: cf-in 400ms ease;
 }
 
-.cs-act.cs-new .cs-act-dot {
-    background: var(--cs-ok);
-    border-color: var(--cs-ok);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--cs-ok) 22%, transparent);
+.cf-act.cf-new .cf-act-dot {
+    background: var(--cf-ok);
+    border-color: var(--cf-ok);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--cf-ok) 22%, transparent);
 }
 
-.cs-act.cs-new .cs-act-text {
+.cf-act.cf-new .cf-act-text {
     font-weight: 750;
 }
 
-.cs-act-time {
+.cf-act-time {
     margin-left: auto;
-    color: var(--cs-faint);
+    color: var(--cf-faint);
     font-size: 12px;
     white-space: nowrap;
 }
 
-.cs-crm-actions {
+.cf-crm-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     padding: 14px 22px;
-    border-top: 1px solid var(--cs-line);
-    background: var(--cs-win-2);
+    border-top: 1px solid var(--cf-line);
+    background: var(--cf-win-2);
 }
 
-.cs-btn {
+.cf-btn {
     padding: 9px 20px;
-    background: var(--cs-win);
-    border: 1px solid var(--cs-line-strong);
+    background: var(--cf-win);
+    border: 1px solid var(--cf-line-strong);
     border-radius: 8px;
-    color: var(--cs-text);
+    color: var(--cf-text);
     font: inherit;
     font-size: 14px;
     font-weight: 700;
     transition: transform 120ms ease, filter 120ms ease;
 }
 
-.cs-btn.cs-primary {
+.cf-btn.cf-primary {
     background: var(--app);
     border-color: var(--app);
     color: #fff;
 }
 
-.cs-btn.cs-pressed {
+.cf-btn.cf-pressed {
     transform: scale(0.95);
     filter: brightness(1.15);
 }
 
-.cs-toast {
+.cf-toast {
     position: absolute;
     bottom: 84px;
     left: 50%;
     z-index: 6;
     padding: 9px 16px;
-    background: var(--cs-ok);
+    background: var(--cf-ok);
     border-radius: 8px;
     color: #fff;
     font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
-    box-shadow: var(--cs-shadow);
+    box-shadow: var(--cf-shadow);
     opacity: 0;
     transform: translate(-50%, 8px);
     transition: opacity 250ms ease, transform 250ms ease;
 }
 
-.cs-toast.cs-show {
+.cf-toast.cf-show {
     opacity: 1;
     transform: translate(-50%, 0);
 }
 
 /* ---------- flow-canvas (node editor) ---------- */
 
-.cs-flow-tabs {
+.cf-flow-tabs {
     display: flex;
     gap: 2px;
     padding: 3px;
-    background: var(--cs-win-3);
+    background: var(--cf-win-3);
     border-radius: 8px;
 }
 
-.cs-flow-tab {
+.cf-flow-tab {
     padding: 4px 10px;
     border-radius: 6px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 12px;
 }
 
-.cs-flow-tab.cs-active {
-    background: var(--cs-win);
-    color: var(--cs-text);
+.cf-flow-tab.cf-active {
+    background: var(--cf-win);
+    color: var(--cf-text);
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
 }
 
-.cs-toggle {
+.cf-toggle {
     display: flex;
     align-items: center;
     gap: 6px;
-    color: var(--cs-text);
+    color: var(--cf-text);
 }
 
-.cs-switch {
+.cf-switch {
     position: relative;
     width: 28px;
     height: 16px;
     border-radius: 999px;
-    background: var(--cs-ok);
+    background: var(--cf-ok);
 }
 
-.cs-switch i {
+.cf-switch i {
     position: absolute;
     top: 2px;
     right: 2px;
@@ -565,7 +606,7 @@
     background: #fff;
 }
 
-.cs-save {
+.cf-save {
     padding: 5px 12px;
     border-radius: 7px;
     background: var(--app);
@@ -573,17 +614,17 @@
     font-weight: 700;
 }
 
-.cs-canvas {
+.cf-canvas {
     position: relative;
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background-color: var(--cs-canvas);
-    background-image: radial-gradient(var(--cs-grid) 1.4px, transparent 1.4px);
+    background-color: var(--cf-canvas);
+    background-image: radial-gradient(var(--cf-grid) 1.4px, transparent 1.4px);
     background-size: 20px 20px;
 }
 
-.cs-rail {
+.cf-rail {
     position: absolute;
     top: 12px;
     left: 10px;
@@ -593,59 +634,59 @@
     gap: 8px;
 }
 
-.cs-rail i {
+.cf-rail i {
     width: 26px;
     height: 26px;
-    background: var(--cs-win-2);
-    border: 1px solid var(--cs-line);
+    background: var(--cf-win-2);
+    border: 1px solid var(--cf-line);
     border-radius: 7px;
 }
 
-.cs-rail .cs-rail-on {
-    background: color-mix(in srgb, var(--app) 20%, var(--cs-win-2));
+.cf-rail .cf-rail-on {
+    background: color-mix(in srgb, var(--app) 20%, var(--cf-win-2));
     border-color: var(--app);
 }
 
-.cs-wires {
+.cf-wires {
     position: absolute;
     inset: 0;
     overflow: visible;
 }
 
-.cs-wire-line {
+.cf-wire-line {
     fill: none;
-    stroke: var(--cs-wire);
+    stroke: var(--cf-wire);
     stroke-width: 2;
     transition: stroke 400ms ease;
 }
 
-.cs-wire-arrow {
-    fill: var(--cs-wire);
+.cf-wire-arrow {
+    fill: var(--cf-wire);
     transition: fill 400ms ease;
 }
 
-.cs-wire-label {
-    fill: var(--cs-ok);
-    font-family: var(--cs-font-mono);
+.cf-wire-label {
+    fill: var(--cf-ok);
+    font-family: var(--cf-font-mono);
     font-size: 11px;
     font-weight: 700;
     opacity: 0;
     transition: opacity 300ms ease;
 }
 
-.cs-wire.cs-lit .cs-wire-line {
-    stroke: var(--cs-ok);
+.cf-wire.cf-lit .cf-wire-line {
+    stroke: var(--cf-ok);
 }
 
-.cs-wire.cs-lit .cs-wire-arrow {
-    fill: var(--cs-ok);
+.cf-wire.cf-lit .cf-wire-arrow {
+    fill: var(--cf-ok);
 }
 
-.cs-wire.cs-lit .cs-wire-label {
+.cf-wire.cf-lit .cf-wire-label {
     opacity: 1;
 }
 
-.cs-nodes {
+.cf-nodes {
     position: absolute;
     inset: 0 0 60px 44px;
     display: flex;
@@ -654,7 +695,7 @@
     padding: 112px 6px 0;
 }
 
-.cs-node {
+.cf-node {
     position: relative;
     z-index: 2;
     display: flex;
@@ -664,41 +705,41 @@
     text-align: center;
 }
 
-.cs-node-tile {
+.cf-node-tile {
     position: relative;
     display: grid;
     place-items: center;
     width: 76px;
     height: 76px;
-    background: var(--cs-node-bg);
-    border: 2px solid var(--cs-node-border);
+    background: var(--cf-node-bg);
+    border: 2px solid var(--cf-node-border);
     border-radius: 12px;
     box-shadow: 0 6px 16px rgb(0 0 0 / 0.2);
     transition: border-color 300ms ease, box-shadow 300ms ease;
 }
 
-.cs-node.cs-trigger .cs-node-tile {
+.cf-node.cf-trigger .cf-node-tile {
     border-radius: 38px 12px 12px 38px;
 }
 
-.cs-node-icon {
+.cf-node-icon {
     display: grid;
     place-items: center;
     width: 42px;
     height: 42px;
     border-radius: 10px;
-    background: var(--node, var(--cs-win-3));
+    background: var(--node, var(--cf-win-3));
     color: var(--node-text, #fff);
-    font-family: var(--cs-font-mono);
+    font-family: var(--cf-font-mono);
     font-size: 14px;
     font-weight: 800;
 }
 
-.cs-node:not([style]) .cs-node-icon {
-    --node-text: var(--cs-text);
+.cf-node:not([style]) .cf-node-icon {
+    --node-text: var(--cf-text);
 }
 
-.cs-node-bolt {
+.cf-node-bolt {
     position: absolute;
     top: 50%;
     left: -24px;
@@ -706,29 +747,29 @@
     transform: translateY(-50%);
 }
 
-.cs-handle {
+.cf-handle {
     position: absolute;
     top: 50%;
-    background: var(--cs-wire);
+    background: var(--cf-wire);
     transform: translateY(-50%);
     transition: background 300ms ease;
 }
 
-.cs-handle-in {
+.cf-handle-in {
     left: -6px;
     width: 6px;
     height: 16px;
     border-radius: 2px;
 }
 
-.cs-handle-out {
+.cf-handle-out {
     right: -7px;
     width: 12px;
     height: 12px;
     border-radius: 50%;
 }
 
-.cs-node-badge {
+.cf-node-badge {
     position: absolute;
     right: 5px;
     bottom: 5px;
@@ -737,7 +778,7 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: var(--cs-ok);
+    background: var(--cf-ok);
     color: #fff;
     font-size: 11px;
     font-weight: 800;
@@ -746,38 +787,38 @@
     transition: opacity 250ms ease, transform 250ms cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
-.cs-node-badge::after {
+.cf-node-badge::after {
     content: "✓";
 }
 
-.cs-node.cs-running .cs-node-tile {
+.cf-node.cf-running .cf-node-tile {
     border-color: var(--app);
     box-shadow: 0 0 0 5px color-mix(in srgb, var(--app) 22%, transparent);
-    animation: cs-pulse 700ms ease-in-out infinite;
+    animation: cf-pulse 700ms ease-in-out infinite;
 }
 
-.cs-node.cs-ok .cs-node-tile {
-    border-color: var(--cs-ok);
+.cf-node.cf-ok .cf-node-tile {
+    border-color: var(--cf-ok);
 }
 
-.cs-node.cs-ok .cs-handle {
-    background: var(--cs-ok);
+.cf-node.cf-ok .cf-handle {
+    background: var(--cf-ok);
 }
 
-.cs-node.cs-ok .cs-node-badge {
+.cf-node.cf-ok .cf-node-badge {
     opacity: 1;
     transform: none;
 }
 
-.cs-node-title,
-.cs-node-sub {
+.cf-node-title,
+.cf-node-sub {
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }
 
-.cs-node-title {
+.cf-node-title {
     -webkit-line-clamp: 3;
     margin-top: 12px;
     font-size: 13px;
@@ -785,22 +826,22 @@
     line-height: 1.25;
 }
 
-.cs-node-sub {
+.cf-node-sub {
     margin-top: 3px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 11.5px;
     line-height: 1.3;
 }
 
-.cs-node-meta {
+.cf-node-meta {
     min-height: 16px;
     margin-top: 6px;
-    color: var(--cs-ok);
-    font-family: var(--cs-font-mono);
+    color: var(--cf-ok);
+    font-family: var(--cf-font-mono);
     font-size: 11.5px;
 }
 
-.cs-canvas-bar {
+.cf-canvas-bar {
     position: absolute;
     left: 0;
     right: 0;
@@ -812,7 +853,7 @@
     gap: 14px;
 }
 
-.cs-test-btn {
+.cf-test-btn {
     padding: 8px 16px;
     border-radius: 8px;
     background: var(--app);
@@ -822,17 +863,17 @@
     box-shadow: 0 8px 20px -8px var(--app);
 }
 
-.cs-run-status {
-    color: var(--cs-dim);
-    font-family: var(--cs-font-mono);
+.cf-run-status {
+    color: var(--cf-dim);
+    font-family: var(--cf-font-mono);
     font-size: 12px;
 }
 
-.cs-run-status.cs-ok {
-    color: var(--cs-ok);
+.cf-run-status.cf-ok {
+    color: var(--cf-ok);
 }
 
-.cs-ndv {
+.cf-ndv {
     position: absolute;
     inset: 0;
     z-index: 6;
@@ -844,292 +885,292 @@
     transition: opacity 300ms ease;
 }
 
-.cs-ndv.cs-open {
+.cf-ndv.cf-open {
     opacity: 1;
 }
 
-.cs-ndv-panel {
+.cf-ndv-panel {
     display: flex;
     flex-direction: column;
     width: calc(100% - 28px);
     height: calc(100% - 28px);
     overflow: hidden;
-    background: var(--cs-win);
-    border: 1px solid var(--cs-line-strong);
+    background: var(--cf-win);
+    border: 1px solid var(--cf-line-strong);
     border-radius: 12px;
-    box-shadow: var(--cs-shadow);
+    box-shadow: var(--cf-shadow);
     transform: scale(0.96);
     transition: transform 350ms cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 
-.cs-ndv.cs-open .cs-ndv-panel {
+.cf-ndv.cf-open .cf-ndv-panel {
     transform: none;
 }
 
-.cs-ndv-head {
+.cf-ndv-head {
     display: flex;
     align-items: center;
     gap: 16px;
     padding: 10px 14px;
-    background: var(--cs-win-2);
-    border-bottom: 1px solid var(--cs-line);
+    background: var(--cf-win-2);
+    border-bottom: 1px solid var(--cf-line);
 }
 
-.cs-ndv-back {
-    color: var(--cs-dim);
+.cf-ndv-back {
+    color: var(--cf-dim);
     font-size: 12px;
     white-space: nowrap;
 }
 
-.cs-ndv-title {
+.cf-ndv-title {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.cs-ndv-name {
+.cf-ndv-name {
     font-size: 15px;
     font-weight: 800;
 }
 
-.cs-ndv-sub {
-    color: var(--cs-dim);
+.cf-ndv-sub {
+    color: var(--cf-dim);
     font-size: 12px;
 }
 
-.cs-ndv-cols {
+.cf-ndv-cols {
     display: grid;
     flex: 1;
     grid-template-columns: 0.85fr 1.15fr;
     min-height: 0;
 }
 
-.cs-ndv-col {
+.cf-ndv-col {
     min-width: 0;
     padding: 12px 14px;
     overflow: hidden;
 }
 
-.cs-ndv-input {
-    background: var(--cs-canvas);
-    border-right: 1px solid var(--cs-line);
+.cf-ndv-input {
+    background: var(--cf-canvas);
+    border-right: 1px solid var(--cf-line);
 }
 
-.cs-ndv-label {
+.cf-ndv-label {
     margin: 4px 0 8px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 11px;
     font-weight: 750;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
-.cs-ndv-json {
+.cf-ndv-json {
     margin: 0;
-    font-family: var(--cs-font-mono);
+    font-family: var(--cf-font-mono);
     font-size: 11.5px;
     line-height: 1.55;
     white-space: pre-wrap;
     word-break: break-word;
 }
 
-.cs-ndv-empty {
-    color: var(--cs-faint);
+.cf-ndv-empty {
+    color: var(--cf-faint);
     font-size: 13px;
 }
 
-.cs-param {
+.cf-param {
     display: flex;
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 6px;
     padding: 7px 10px;
-    background: var(--cs-win-2);
-    border: 1px solid var(--cs-line);
+    background: var(--cf-win-2);
+    border: 1px solid var(--cf-line);
     border-radius: 7px;
     font-size: 12.5px;
 }
 
-.cs-param-val {
+.cf-param-val {
     font-weight: 650;
 }
 
-.cs-expr-box,
-.cs-msg-text code {
-    font-family: var(--cs-font-mono);
+.cf-expr-box,
+.cf-msg-text code {
+    font-family: var(--cf-font-mono);
 }
 
-.cs-expr-box {
+.cf-expr-box {
     min-height: 58px;
     padding: 9px 11px;
-    background: var(--cs-win-2);
-    border: 1px solid var(--cs-line-strong);
+    background: var(--cf-win-2);
+    border: 1px solid var(--cf-line-strong);
     border-radius: 8px;
     font-size: 12.5px;
     line-height: 1.7;
     word-break: break-word;
 }
 
-.cs-tok {
+.cf-tok {
     padding: 1px 4px;
     border-radius: 4px;
-    background: color-mix(in srgb, var(--cs-ok) 16%, transparent);
-    color: var(--cs-ok);
+    background: color-mix(in srgb, var(--cf-ok) 16%, transparent);
+    color: var(--cf-ok);
     white-space: nowrap;
 }
 
-.cs-result-label {
+.cf-result-label {
     opacity: 0;
     transition: opacity 300ms ease;
 }
 
-.cs-result {
+.cf-result {
     opacity: 0;
     transition: opacity 300ms ease;
     padding: 9px 12px;
-    background: color-mix(in srgb, var(--cs-ok) 10%, transparent);
-    border-left: 3px solid var(--cs-ok);
+    background: color-mix(in srgb, var(--cf-ok) 10%, transparent);
+    border-left: 3px solid var(--cf-ok);
     border-radius: 6px;
     font-size: 13.5px;
     line-height: 1.45;
 }
 
-.cs-result-label.cs-show,
-.cs-result.cs-show {
+.cf-result-label.cf-show,
+.cf-result.cf-show {
     opacity: 1;
 }
 
-.cs-output {
+.cf-output {
     height: 0;
     flex-shrink: 0;
     overflow: hidden;
-    background: var(--cs-win-2);
+    background: var(--cf-win-2);
     border-top: 1px solid transparent;
     transition: height 400ms ease;
 }
 
-.cs-output.cs-open {
+.cf-output.cf-open {
     height: 156px;
-    border-top-color: var(--cs-line);
+    border-top-color: var(--cf-line);
 }
 
-.cs-output-head {
+.cf-output-head {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 9px 16px 5px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 12px;
     font-weight: 700;
 }
 
-.cs-output-count {
+.cf-output-count {
     padding: 1px 7px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--cs-ok) 16%, transparent);
-    color: var(--cs-ok);
+    background: color-mix(in srgb, var(--cf-ok) 16%, transparent);
+    color: var(--cf-ok);
     font-size: 11px;
 }
 
-.cs-output-tabs {
+.cf-output-tabs {
     display: flex;
     gap: 2px;
     margin-left: auto;
     padding: 2px;
-    background: var(--cs-win-3);
+    background: var(--cf-win-3);
     border-radius: 6px;
     font-weight: 600;
 }
 
-.cs-output-tabs span {
+.cf-output-tabs span {
     padding: 2px 8px;
     border-radius: 4px;
 }
 
-.cs-output-tabs .cs-active {
-    background: var(--cs-win);
-    color: var(--cs-text);
+.cf-output-tabs .cf-active {
+    background: var(--cf-win);
+    color: var(--cf-text);
 }
 
-.cs-output pre {
+.cf-output pre {
     margin: 0;
     padding: 0 16px 10px;
-    font-family: var(--cs-font-mono);
+    font-family: var(--cf-font-mono);
     font-size: 12.5px;
     line-height: 1.5;
     white-space: pre;
 }
 
-.j-key { color: var(--cs-accent); }
-.j-str { color: var(--cs-ok); }
-.j-num { color: var(--cs-warn); }
+.j-key { color: var(--cf-accent); }
+.j-str { color: var(--cf-ok); }
+.j-num { color: var(--cf-warn); }
 .j-lit { color: #c084fc; }
 
 /* ---------- team-chat ---------- */
 
-.cs-chat-main {
+.cf-chat-main {
     display: flex;
     flex: 1;
     min-height: 0;
 }
 
-.cs-chat-side {
+.cf-chat-side {
     width: 136px;
     flex-shrink: 0;
     padding: 12px 8px;
-    background: color-mix(in srgb, var(--app) 12%, var(--cs-win-2));
-    border-right: 1px solid var(--cs-line);
+    background: color-mix(in srgb, var(--app) 12%, var(--cf-win-2));
+    border-right: 1px solid var(--cf-line);
     font-size: 13.5px;
 }
 
-.cs-side-label {
+.cf-side-label {
     margin: 4px 8px 6px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 11.5px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 
-.cs-chan {
+.cf-chan {
     padding: 6px 8px;
     overflow: hidden;
     border-radius: 6px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
-.cs-chan.cs-active {
+.cf-chan.cf-active {
     background: var(--app);
     color: #fff;
     font-weight: 750;
 }
 
-.cs-chat-pane {
+.cf-chat-pane {
     display: flex;
     flex: 1;
     flex-direction: column;
     min-width: 0;
 }
 
-.cs-chat-head {
+.cf-chat-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     padding: 13px 16px;
-    border-bottom: 1px solid var(--cs-line);
+    border-bottom: 1px solid var(--cf-line);
     font-size: 15.5px;
     font-weight: 800;
 }
 
-.cs-chat-members {
-    color: var(--cs-dim);
+.cf-chat-members {
+    color: var(--cf-dim);
     font-size: 12px;
     font-weight: 500;
 }
 
-.cs-msgs {
+.cf-msgs {
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -1139,21 +1180,21 @@
     overflow: hidden;
 }
 
-.cs-msgs > :first-child {
+.cf-msgs > :first-child {
     margin-top: auto;
 }
 
-.cs-msg {
+.cf-msg {
     display: grid;
     grid-template-columns: 36px 1fr;
     gap: 10px;
 }
 
-.cs-msg.cs-new {
-    animation: cs-in 400ms cubic-bezier(0.3, 0.7, 0.2, 1);
+.cf-msg.cf-new {
+    animation: cf-in 400ms cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 
-.cs-avatar {
+.cf-avatar {
     display: grid;
     place-items: center;
     width: 36px;
@@ -1165,105 +1206,105 @@
     font-weight: 800;
 }
 
-.cs-msg-head {
+.cf-msg-head {
     display: flex;
     align-items: baseline;
     gap: 6px;
 }
 
-.cs-msg-name {
+.cf-msg-name {
     font-size: 14.5px;
     font-weight: 800;
 }
 
-.cs-badge {
+.cf-badge {
     padding: 1px 4px;
-    background: var(--cs-win-3);
+    background: var(--cf-win-3);
     border-radius: 3px;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: 9.5px;
     font-weight: 800;
 }
 
-.cs-msg-time {
-    color: var(--cs-faint);
+.cf-msg-time {
+    color: var(--cf-faint);
     font-size: 11.5px;
 }
 
-.cs-msg-main {
+.cf-msg-main {
     min-width: 0;
 }
 
-.cs-msg-text {
+.cf-msg-text {
     overflow-wrap: anywhere;
     margin-top: 2px;
     font-size: 14.5px;
     line-height: 1.45;
 }
 
-.cs-msg-text code {
+.cf-msg-text code {
     font-size: 13px;
 }
 
-.cs-reacts {
+.cf-reacts {
     display: flex;
     gap: 6px;
     margin-top: 7px;
 }
 
-.cs-react {
+.cf-react {
     display: inline-flex;
     gap: 5px;
     padding: 2px 9px;
-    background: color-mix(in srgb, var(--cs-accent) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--cs-accent) 50%, transparent);
+    background: color-mix(in srgb, var(--cf-accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--cf-accent) 50%, transparent);
     border-radius: 999px;
     font-size: 13.5px;
-    animation: cs-pop 350ms cubic-bezier(0.3, 1.6, 0.5, 1);
+    animation: cf-pop 350ms cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
-.cs-react-count {
-    font-family: var(--cs-font-mono);
+.cf-react-count {
+    font-family: var(--cf-font-mono);
     font-weight: 700;
 }
 
-.cs-thread {
+.cf-thread {
     margin-top: 9px;
     padding-left: 10px;
-    border-left: 2px solid var(--cs-line);
+    border-left: 2px solid var(--cf-line);
 }
 
-.cs-thread-sum {
+.cf-thread-sum {
     margin-bottom: 6px;
-    color: var(--cs-accent);
+    color: var(--cf-accent);
     font-size: 12.5px;
     font-weight: 800;
 }
 
-.cs-thread .cs-msg {
+.cf-thread .cf-msg {
     grid-template-columns: 26px 1fr;
-    animation: cs-in 400ms ease;
+    animation: cf-in 400ms ease;
 }
 
-.cs-thread .cs-avatar {
+.cf-thread .cf-avatar {
     width: 26px;
     height: 26px;
     border-radius: 7px;
     font-size: 10px;
 }
 
-.cs-composer {
+.cf-composer {
     margin: 10px 16px 16px;
     padding: 11px 13px;
-    border: 1px solid var(--cs-line);
+    border: 1px solid var(--cf-line);
     border-radius: 10px;
-    color: var(--cs-faint);
+    color: var(--cf-faint);
     font-size: 14px;
 }
 
 /* ---------- cursor and packets ---------- */
 
-.cs-cursor {
+.cf-cursor {
     position: absolute;
     left: 0;
     top: 0;
@@ -1276,11 +1317,11 @@
     transition: opacity 300ms ease;
 }
 
-.cs-cursor.cs-visible {
+.cf-cursor.cf-visible {
     opacity: 1;
 }
 
-.cs-cursor path {
+.cf-cursor path {
     fill: #fff;
     stroke: #111;
     stroke-width: 1.4;
@@ -1288,22 +1329,22 @@
     filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.4));
 }
 
-.cs-cursor-ring {
+.cf-cursor-ring {
     position: absolute;
     left: -12px;
     top: -12px;
     width: 32px;
     height: 32px;
-    border: 2px solid var(--cs-accent);
+    border: 2px solid var(--cf-accent);
     border-radius: 50%;
     opacity: 0;
 }
 
-.cs-cursor.cs-click .cs-cursor-ring {
-    animation: cs-ring 450ms ease-out;
+.cf-cursor.cf-click .cf-cursor-ring {
+    animation: cf-ring 450ms ease-out;
 }
 
-.cs-links {
+.cf-links {
     position: absolute;
     inset: 0;
     z-index: 40;
@@ -1311,34 +1352,34 @@
     pointer-events: none;
 }
 
-.cs-link {
+.cf-link {
     fill: none;
-    stroke: var(--cs-accent);
+    stroke: var(--cf-accent);
     stroke-width: 3.5;
     stroke-linecap: round;
-    filter: drop-shadow(0 0 6px var(--cs-accent));
+    filter: drop-shadow(0 0 6px var(--cf-accent));
 }
 
-.cs-link.cs-trail {
+.cf-link.cf-trail {
     stroke-opacity: 0.3;
     filter: none;
 }
 
-.cs-link.cs-lit {
+.cf-link.cf-lit {
     stroke-opacity: 1;
     stroke-dasharray: 10 10 !important;
-    filter: drop-shadow(0 0 6px var(--cs-accent));
-    animation: cs-flow 900ms linear infinite;
+    filter: drop-shadow(0 0 6px var(--cf-accent));
+    animation: cf-flow 900ms linear infinite;
 }
 
-.cs-packet {
+.cf-packet {
     fill: #fff;
-    filter: drop-shadow(0 0 10px var(--cs-accent));
+    filter: drop-shadow(0 0 10px var(--cf-accent));
 }
 
 /* ---------- overlays ---------- */
 
-.cs-progress {
+.cf-progress {
     position: absolute;
     top: 0;
     left: 0;
@@ -1348,16 +1389,16 @@
     background: rgb(255 255 255 / 0.08);
 }
 
-.cs-progress i {
+.cf-progress i {
     display: block;
     width: calc(var(--p, 0) * 100%);
     height: 100%;
-    background: var(--cs-accent);
-    box-shadow: 0 0 10px var(--cs-accent);
+    background: var(--cf-accent);
+    box-shadow: 0 0 10px var(--cf-accent);
     transition: width 400ms ease;
 }
 
-.cs-subtitle {
+.cf-subtitle {
     position: absolute;
     left: 50%;
     bottom: 4.5%;
@@ -1377,56 +1418,56 @@
     backdrop-filter: blur(6px);
 }
 
-.cs-subtitle.cs-show {
+.cf-subtitle.cf-show {
     opacity: 1;
     transform: translate(-50%, 0);
 }
 
-.cs-intro,
-.cs-endcard {
+.cf-intro,
+.cf-endcard {
     position: absolute;
     inset: 0;
     z-index: 70;
     display: grid;
     place-items: center;
-    background: color-mix(in srgb, var(--cs-stage) 82%, transparent);
+    background: color-mix(in srgb, var(--cf-stage) 82%, transparent);
     opacity: 0;
     pointer-events: none;
     transition: opacity 500ms ease;
     backdrop-filter: blur(10px);
 }
 
-.cs-endcard {
-    background: color-mix(in srgb, var(--cs-stage) 40%, transparent);
+.cf-endcard {
+    background: color-mix(in srgb, var(--cf-stage) 40%, transparent);
     backdrop-filter: none;
 }
 
-.cs-endcard-inner {
+.cf-endcard-inner {
     padding: 1.6em 2.2em;
-    background: color-mix(in srgb, var(--cs-win) 94%, transparent);
-    border: 1px solid var(--cs-line-strong);
+    background: color-mix(in srgb, var(--cf-win) 94%, transparent);
+    border: 1px solid var(--cf-line-strong);
     border-radius: 16px;
-    box-shadow: var(--cs-shadow);
+    box-shadow: var(--cf-shadow);
 }
 
-.cs-endcard.cs-show.cs-instant li {
+.cf-endcard.cf-show.cf-instant li {
     opacity: 1;
     animation: none;
 }
 
-.cs-intro.cs-show,
-.cs-endcard.cs-show {
+.cf-intro.cf-show,
+.cf-endcard.cf-show {
     opacity: 1;
     pointer-events: auto;
 }
 
-.cs-intro-inner,
-.cs-endcard-inner {
+.cf-intro-inner,
+.cf-endcard-inner {
     max-width: 74%;
     text-align: center;
 }
 
-.cs-intro-chain {
+.cf-intro-chain {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1437,47 +1478,47 @@
     font-weight: 700;
 }
 
-.cs-intro-app {
+.cf-intro-app {
     display: inline-flex;
     align-items: center;
     gap: 0.45em;
 }
 
-.cs-intro-app .cs-appicon {
+.cf-intro-app .cf-appicon {
     width: 2.1em;
     height: 2.1em;
     border-radius: 0.55em;
     font-size: 0.8em;
 }
 
-.cs-intro-arrow {
-    color: var(--cs-accent);
+.cf-intro-arrow {
+    color: var(--cf-accent);
 }
 
-.cs-intro-title {
+.cf-intro-title {
     font-size: clamp(18px, 4.2cqi, 50px);
     font-weight: 850;
     letter-spacing: -0.03em;
     line-height: 1.05;
 }
 
-.cs-intro-overview {
+.cf-intro-overview {
     margin-top: 0.7em;
-    color: var(--cs-dim);
+    color: var(--cf-dim);
     font-size: clamp(11px, 1.75cqi, 20px);
     line-height: 1.45;
 }
 
-.cs-endcard-label {
+.cf-endcard-label {
     margin-bottom: 0.8em;
-    color: var(--cs-accent);
-    font-family: var(--cs-font-mono);
+    color: var(--cf-accent);
+    font-family: var(--cf-font-mono);
     font-size: clamp(10px, 1.3cqi, 15px);
     letter-spacing: 0.16em;
     text-transform: uppercase;
 }
 
-.cs-endcard ol {
+.cf-endcard ol {
     margin: 0 0 1.2em;
     padding: 0;
     list-style: none;
@@ -1485,41 +1526,41 @@
     text-align: left;
 }
 
-.cs-endcard li {
+.cf-endcard li {
     display: flex;
     gap: 0.6em;
     padding: 0.32em 0;
     opacity: 0;
 }
 
-.cs-endcard.cs-show li {
-    animation: cs-in 450ms ease forwards;
+.cf-endcard.cf-show li {
+    animation: cf-in 450ms ease forwards;
     animation-delay: calc(var(--i, 0) * 160ms + 200ms);
 }
 
-.cs-check {
-    color: var(--cs-ok);
+.cf-check {
+    color: var(--cf-ok);
     font-weight: 800;
 }
 
-.cs-poster {
+.cf-poster {
     display: none;
 }
 
-.cs-player.cs-has-poster .cs-poster {
+.cf-player.cf-has-poster .cf-poster {
     position: absolute;
     inset: 0;
     z-index: 75;
     display: block;
 }
 
-.cs-poster ::slotted(*) {
+.cf-poster ::slotted(*) {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.cs-bigplay {
+.cf-bigplay {
     position: absolute;
     left: 50%;
     top: 50%;
@@ -1527,33 +1568,33 @@
     width: 76px;
     height: 76px;
     padding-left: 6px;
-    background: var(--cs-accent);
+    background: var(--cf-accent);
     border: none;
     border-radius: 50%;
     color: #031016;
     font-size: 28px;
     cursor: pointer;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 40px color-mix(in srgb, var(--cs-accent) 60%, transparent);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--cf-accent) 60%, transparent);
 }
 
 /* ---------- controls ---------- */
 
-.cs-controls {
+.cf-controls {
     display: flex;
     align-items: flex-start;
     gap: 1.25rem;
     margin-top: 1rem;
 }
 
-.cs-chapters {
+.cf-chapters {
     display: grid;
     flex: 1;
     grid-template-columns: repeat(var(--n), minmax(0, 1fr));
     gap: 0.6rem;
 }
 
-.cs-ch {
+.cf-ch {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -1561,9 +1602,9 @@
     padding: 0.7rem 0.15rem 0;
     background: none;
     border: none;
-    border-top: 2px solid var(--cs-line);
-    color: var(--cs-control-text);
-    font-family: var(--cs-font-mono);
+    border-top: 2px solid var(--cf-line);
+    color: var(--cf-control-text);
+    font-family: var(--cf-font-mono);
     font-size: 12.5px;
     text-align: left;
     cursor: pointer;
@@ -1571,70 +1612,70 @@
     transition: color 300ms ease, border-color 300ms ease, opacity 300ms ease;
 }
 
-.cs-ch:hover,
-.cs-ch.cs-done,
-.cs-ch.cs-active {
+.cf-ch:hover,
+.cf-ch.cf-done,
+.cf-ch.cf-active {
     opacity: 1;
 }
 
-.cs-ch.cs-done {
-    border-top-color: color-mix(in srgb, var(--cs-accent) 50%, transparent);
+.cf-ch.cf-done {
+    border-top-color: color-mix(in srgb, var(--cf-accent) 50%, transparent);
 }
 
-.cs-ch.cs-active {
-    border-top-color: var(--cs-accent);
-    box-shadow: 0 -6px 12px -8px var(--cs-accent);
+.cf-ch.cf-active {
+    border-top-color: var(--cf-accent);
+    box-shadow: 0 -6px 12px -8px var(--cf-accent);
 }
 
-.cs-ch-num {
-    color: var(--cs-accent);
+.cf-ch-num {
+    color: var(--cf-accent);
 }
 
-.cs-ch:focus-visible,
-.cs-cbtn:focus-visible,
-.cs-bigplay:focus-visible {
-    outline: 2px solid var(--cs-accent);
+.cf-ch:focus-visible,
+.cf-cbtn:focus-visible,
+.cf-bigplay:focus-visible {
+    outline: 2px solid var(--cf-accent);
     outline-offset: 3px;
 }
 
-.cs-now {
+.cf-now {
     display: none;
-    color: var(--cs-control-text);
-    font-family: var(--cs-font-mono);
+    color: var(--cf-control-text);
+    font-family: var(--cf-font-mono);
     font-size: 12.5px;
 }
 
-.cs-buttons {
+.cf-buttons {
     display: flex;
     gap: 0.5rem;
     padding-top: 0.7rem;
 }
 
-.cs-cbtn {
+.cf-cbtn {
     padding: 0.45rem 0.85rem;
     background: none;
-    border: 1px solid var(--cs-line);
+    border: 1px solid var(--cf-line);
     border-radius: 6px;
-    color: var(--cs-accent);
-    font-family: var(--cs-font-mono);
+    color: var(--cf-accent);
+    font-family: var(--cf-font-mono);
     font-size: 12.5px;
     white-space: nowrap;
     cursor: pointer;
 }
 
-.cs-cbtn:hover {
-    border-color: var(--cs-accent);
+.cf-cbtn:hover {
+    border-color: var(--cf-accent);
 }
 
-.cs-disclaimer {
+.cf-disclaimer {
     margin: 0.8rem 0 0;
-    color: var(--cs-control-text);
-    font-family: var(--cs-font-mono);
+    color: var(--cf-control-text);
+    font-family: var(--cf-font-mono);
     font-size: 12px;
     opacity: 0.75;
 }
 
-.cs-sr {
+.cf-sr {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -1643,7 +1684,7 @@
     white-space: nowrap;
 }
 
-.cs-error {
+.cf-error {
     padding: 14px 16px;
     background: #2a1215;
     border: 1px solid #f87171;
@@ -1654,89 +1695,285 @@
     line-height: 1.5;
 }
 
-.cs-error ul {
+.cf-error ul {
     margin: 8px 0 0;
     padding-left: 18px;
 }
 
 @container (max-width: 600px) {
-    .cs-player[data-aspect="auto"] .cs-stage {
+    .cf-player[data-aspect="auto"] .cf-stage {
         aspect-ratio: 4 / 5;
     }
 }
 
 @container (max-width: 640px) {
-    .cs-endcard-inner {
+    .cf-endcard-inner {
         max-width: 90%;
         padding: 0.9em 1.1em;
     }
 
-    .cs-endcard ol {
+    .cf-endcard ol {
         margin-bottom: 0.6em;
         font-size: clamp(10px, 3.1cqi, 15px);
     }
 
-    .cs-endcard li {
+    .cf-endcard li {
         padding: 0.18em 0;
     }
 
-    .cs-controls {
+    .cf-controls {
         flex-direction: column;
         gap: 0.6rem;
     }
 
-    .cs-chapters {
+    .cf-chapters {
         width: 100%;
     }
 
-    .cs-ch-label {
+    .cf-ch-label {
         display: none;
     }
 
-    .cs-now {
+    .cf-now {
         display: block;
     }
 
-    .cs-stage {
+    .cf-stage {
         border-radius: 10px;
     }
 }
 
 /* ---------- motion ---------- */
 
-@keyframes cs-in {
+@keyframes cf-in {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: none; }
 }
 
-@keyframes cs-pop {
+@keyframes cf-pop {
     from { transform: scale(0.5); }
     to { transform: none; }
 }
 
-@keyframes cs-ring {
+@keyframes cf-ring {
     0% { opacity: 1; transform: scale(0.4); }
     100% { opacity: 0; transform: scale(1.4); }
 }
 
-@keyframes cs-pulse {
-    50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--cs-accent) 12%, transparent); }
+@keyframes cf-pulse {
+    50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--cf-accent) 12%, transparent); }
 }
 
-@keyframes cs-flow {
+@keyframes cf-flow {
     to { stroke-dashoffset: -20; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .cs-ndv,
-    .cs-ndv-panel,
-    .cs-output,
-    .cs-world > .cs-screen {
+    .cf-ndv,
+    .cf-ndv-panel,
+    .cf-output,
+    .cf-world > .cf-screen {
         transition: none;
     }
 
-    .cs-link.cs-lit,
-    .cs-node.cs-running .cs-node-tile {
+    .cf-link.cf-lit,
+    .cf-node.cf-running .cf-node-tile {
         animation: none;
     }
+}
+
+/* ---------- scene backdrops ---------- */
+
+.cf-backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.cf-backdrop-layer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(170deg, var(--bd-1), var(--bd-2));
+    opacity: 0;
+    transition: opacity 700ms ease;
+}
+
+.cf-backdrop-layer.cf-in {
+    opacity: 1;
+}
+
+.cf-backdrop-layer.cf-instant {
+    transition: none;
+}
+
+/* ---------- actors: spheres, blocks, pills, rings ---------- */
+
+.cf-actor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transform-origin: 50% 100%;
+    transition: filter 500ms ease;
+    will-change: transform;
+}
+
+/* a glossy ball: a soft two-tone body, a specular highlight, a window glint, and a rim of reflected light */
+.cf-actor-sphere {
+    background:
+        radial-gradient(circle at 68% 80%, color-mix(in oklch, var(--actor) 72%, #fff) 0, transparent 30%),
+        radial-gradient(circle at 34% 28%, color-mix(in oklch, var(--actor) 42%, #fff) 0, var(--actor) 40%, color-mix(in oklch, var(--actor) 62%, #2a1670) 100%);
+    border-radius: 50%;
+    box-shadow: inset -10px -16px 30px color-mix(in oklch, var(--actor) 50%, #000), inset 6px 8px 18px rgb(255 255 255 / 0.2);
+}
+
+.cf-actor-sphere::before {
+    content: "";
+    position: absolute;
+    top: 10%;
+    left: 17%;
+    width: 36%;
+    height: 25%;
+    background: radial-gradient(ellipse, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0.5) 38%, transparent 72%);
+    border-radius: 50%;
+    transform: rotate(-32deg);
+}
+
+.cf-actor-sphere::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 63% 21%, rgb(255 255 255 / 0.75) 0, transparent 5%);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+.cf-actor-block,
+.cf-actor-pill {
+    background: linear-gradient(160deg, color-mix(in oklch, var(--actor) 70%, #fff) 0%, var(--actor) 45%, color-mix(in oklch, var(--actor) 72%, #1d1450) 100%);
+    border-radius: 26%;
+    box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.45), inset 0 -8px 16px rgb(0 0 0 / 0.16);
+}
+
+/* a glossy sheen across the top */
+.cf-actor-block::before,
+.cf-actor-pill::before {
+    content: "";
+    position: absolute;
+    top: 4%;
+    left: 7%;
+    right: 7%;
+    height: 40%;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.42), rgb(255 255 255 / 0));
+    border-radius: 999px 999px 40% 40%;
+}
+
+.cf-actor-pill {
+    border-radius: 999px;
+}
+
+.cf-actor-ring {
+    border: calc(var(--size) * 0.14) solid var(--actor);
+    border-radius: 50%;
+}
+
+/* finishes: "gloss" (the default), "matte" with no shine, or see-through "glass" */
+.cf-actor.cf-finish-matte::before,
+.cf-actor.cf-finish-matte::after {
+    display: none;
+}
+
+.cf-actor-sphere.cf-finish-matte {
+    background: radial-gradient(circle at 36% 30%, color-mix(in oklch, var(--actor) 78%, #fff) 0, var(--actor) 50%, color-mix(in oklch, var(--actor) 75%, #2a1670) 100%);
+    box-shadow: inset -8px -12px 24px color-mix(in oklch, var(--actor) 70%, #000);
+}
+
+/* glass is thin and clear in the middle and thick, deep-coloured at the rim; light gathers into a caustic near the bottom */
+.cf-actor.cf-finish-glass {
+    background:
+        radial-gradient(ellipse 46% 26% at 50% 80%, color-mix(in oklch, var(--actor) 45%, #fff) 0, transparent 100%),
+        radial-gradient(circle at 50% 46%, color-mix(in oklch, var(--actor) 22%, transparent) 0, color-mix(in oklch, var(--actor) 52%, transparent) 55%, color-mix(in oklch, var(--actor) 92%, #1d1450) 100%);
+    border: 1.5px solid color-mix(in oklch, var(--actor) 45%, #fff);
+    box-shadow:
+        inset 0 0 0 1px rgb(255 255 255 / 0.3),
+        inset 0 -16px 26px color-mix(in oklch, var(--actor) 65%, transparent),
+        inset 0 12px 20px rgb(255 255 255 / 0.5);
+    -webkit-backdrop-filter: blur(6px) saturate(180%);
+    backdrop-filter: blur(6px) saturate(180%);
+}
+
+.cf-actor-block.cf-finish-glass,
+.cf-actor-pill.cf-finish-glass {
+    background: linear-gradient(160deg, color-mix(in oklch, var(--actor) 30%, rgb(255 255 255 / 0.6)), color-mix(in oklch, var(--actor) 50%, transparent) 50%, color-mix(in oklch, var(--actor) 85%, #1d1450));
+}
+
+/* the turning surface of a sphere: a faint seam and spot that show it rolling */
+.cf-actor-spin {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 74% 62%, rgb(255 255 255 / 0.2) 0 8%, transparent 9.5%);
+    border-radius: 50%;
+}
+
+.cf-actor-spin::before {
+    content: "";
+    position: absolute;
+    inset: 16%;
+    border: calc(var(--size) * 0.025) solid rgb(255 255 255 / 0.22);
+    border-color: rgb(255 255 255 / 0.22) transparent transparent rgb(255 255 255 / 0.22);
+    border-radius: 50%;
+}
+
+.cf-actor.cf-finish-matte .cf-actor-spin {
+    opacity: 0.6;
+}
+
+/* light passing through glass tints its shadow */
+.cf-actor-shadow.cf-shadow-glass {
+    background: radial-gradient(closest-side, color-mix(in oklch, var(--actor) 55%, rgb(0 0 0 / 0.25)), transparent);
+}
+
+.cf-actor-shadow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 39;
+    background: radial-gradient(closest-side, rgb(0 0 0 / 0.32), rgb(0 0 0 / 0));
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.cf-actor-label {
+    position: relative;
+    padding: 0 10%;
+    color: #fff;
+    font: 700 calc(var(--size) * 0.13) / 1.2 var(--cf-font-ui);
+    text-align: center;
+    text-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+.cf-confetti-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 46;
+    pointer-events: none;
+}
+
+.cf-confetti {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 2px;
+    will-change: transform;
+}
+
+/* touch-first films hide the pointer */
+.cf-cursor.cf-cursor-off {
+    display: none;
 }

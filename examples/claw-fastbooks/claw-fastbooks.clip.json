@@ -1,6 +1,6 @@
 {
-  "$schema": "../../schema/clipscript.schema.json",
-  "clipscript": "1",
+  "$schema": "../../schema/cueflick.schema.json",
+  "cueflick": "1",
   "title": "Invoices sent from a chat",
   "template": "assistant-connector",
   "layout": "stage",

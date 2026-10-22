@@ -65,51 +65,51 @@ function validateRecord(def, path, report) {
 }
 
 function activityItem(item, isNew = false) {
-    return h('li', { class: isNew ? 'cs-act cs-new' : 'cs-act' }, [
-        h('span', { class: 'cs-act-dot', 'aria-hidden': 'true' }),
-        h('span', { class: 'cs-act-text', text: item.text }),
-        item.time ? h('span', { class: 'cs-act-time', text: item.time }) : null
+    return h('li', { class: isNew ? 'cf-act cf-new' : 'cf-act' }, [
+        h('span', { class: 'cf-act-dot', 'aria-hidden': 'true' }),
+        h('span', { class: 'cf-act-text', text: item.text }),
+        item.time ? h('span', { class: 'cf-act-time', text: item.time }) : null
     ]);
 }
 
 function render(def) {
     const { record } = def;
     const stages = Array.isArray(record.stages) ? record.stages : [];
-    const { el, body } = appWindow(def.app, { title: record.module ?? 'Records', className: 'cs-crm' });
-    const path = stages.length ? h('div', { class: 'cs-path' }, stages.map(stage => h('span', { dataset: { stage }, text: stage }))) : null;
+    const { el, body } = appWindow(def.app, { title: record.module ?? 'Records', className: 'cf-crm' });
+    const path = stages.length ? h('div', { class: 'cf-path' }, stages.map(stage => h('span', { dataset: { stage }, text: stage }))) : null;
 
     const fields = Object.entries(record.fields).map(([name, value]) => {
         const options = optionsFor(record, name);
         const control = options
-            ? h('div', { class: 'cs-select' }, [
-                h('span', { class: 'cs-val', text: String(value) }),
-                h('span', { class: 'cs-caret', text: '▾' }),
-                h('div', { class: 'cs-menu' }, options.map(option => h('div', { class: 'cs-opt', dataset: { value: option }, text: option })))
+            ? h('div', { class: 'cf-select' }, [
+                h('span', { class: 'cf-val', text: String(value) }),
+                h('span', { class: 'cf-caret', text: '▾' }),
+                h('div', { class: 'cf-menu' }, options.map(option => h('div', { class: 'cf-opt', dataset: { value: option }, text: option })))
             ])
-            : h('div', { class: 'cs-val', text: String(value) });
-        return h('div', { class: 'cs-field', dataset: { field: name } }, [h('label', { text: name }), control]);
+            : h('div', { class: 'cf-val', text: String(value) });
+        return h('div', { class: 'cf-field', dataset: { field: name } }, [h('label', { text: name }), control]);
     });
 
     const buttons = buttonsOf(record).map((label, i) => h('button', {
-        class: i === 0 ? 'cs-btn cs-primary' : 'cs-btn',
+        class: i === 0 ? 'cf-btn cf-primary' : 'cf-btn',
         type: 'button',
         tabindex: '-1',
         dataset: { button: label },
         text: label
     }));
-    const toast = h('div', { class: 'cs-toast', role: 'status' });
-    const activity = h('ul', { class: 'cs-activity-list' }, (record.activity ?? []).map(item => activityItem(item)));
+    const toast = h('div', { class: 'cf-toast', role: 'status' });
+    const activity = h('ul', { class: 'cf-activity-list' }, (record.activity ?? []).map(item => activityItem(item)));
 
     body.append(
-        h('div', { class: 'cs-crm-head' }, [
-            h('div', { class: 'cs-crm-type', text: record.type ?? 'Record' }),
-            h('div', { class: 'cs-crm-title', text: record.title }),
+        h('div', { class: 'cf-crm-head' }, [
+            h('div', { class: 'cf-crm-type', text: record.type ?? 'Record' }),
+            h('div', { class: 'cf-crm-title', text: record.title }),
             path
         ]),
-        h('div', { class: 'cs-crm-tabs' }, [h('span', { class: 'cs-active', text: 'Details' }), h('span', { text: 'Activity' }), h('span', { text: 'Files' })]),
-        h('div', { class: 'cs-crm-fields' }, fields),
-        h('div', { class: 'cs-activity' }, [h('div', { class: 'cs-activity-label', text: 'Recent activity' }), activity]),
-        h('div', { class: 'cs-crm-actions' }, buttons)
+        h('div', { class: 'cf-crm-tabs' }, [h('span', { class: 'cf-active', text: 'Details' }), h('span', { text: 'Activity' }), h('span', { text: 'Files' })]),
+        h('div', { class: 'cf-crm-fields' }, fields),
+        h('div', { class: 'cf-activity' }, [h('div', { class: 'cf-activity-label', text: 'Recent activity' }), activity]),
+        h('div', { class: 'cf-crm-actions' }, buttons)
     );
     el.append(toast);
     let changedStage = null;
@@ -121,24 +121,24 @@ function render(def) {
             if (!path) return;
             const index = stages.indexOf(value);
             [...path.children].forEach((chip, i) => {
-                chip.classList.toggle('cs-done', i < index);
-                chip.classList.toggle('cs-current', i === index);
-                chip.classList.toggle('cs-won', i === index && index === stages.length - 1);
+                chip.classList.toggle('cf-done', i < index);
+                chip.classList.toggle('cf-current', i === index);
+                chip.classList.toggle('cf-won', i === index && index === stages.length - 1);
             });
         },
         setField(name, value) {
             const field = byData(el, 'field', name);
             if (!field) return;
-            field.querySelector('.cs-val').textContent = value;
-            field.classList.add('cs-dirty');
+            field.querySelector('.cf-val').textContent = value;
+            field.classList.add('cf-dirty');
             if (name === stageFieldOf(record)) {
                 view.setStage(value);
                 changedStage = value;
             }
         },
         save() {
-            const changed = el.querySelectorAll('.cs-dirty');
-            for (const field of changed) field.classList.remove('cs-dirty');
+            const changed = el.querySelectorAll('.cf-dirty');
+            for (const field of changed) field.classList.remove('cf-dirty');
             if (changed.length) {
                 const text = changedStage ? `Stage changed to ${changedStage}` : 'Record updated';
                 activity.prepend(activityItem({ text, time: 'just now' }, true));
@@ -147,13 +147,13 @@ function render(def) {
         },
         showToast(text) {
             toast.textContent = `✓ ${text}`;
-            toast.classList.add('cs-show');
+            toast.classList.add('cf-show');
         },
         hideToast() {
-            toast.classList.remove('cs-show');
+            toast.classList.remove('cf-show');
         },
         closeMenus() {
-            for (const select of el.querySelectorAll('.cs-select.cs-open')) select.classList.remove('cs-open');
+            for (const select of el.querySelectorAll('.cf-select.cf-open')) select.classList.remove('cf-open');
         }
     };
     view.setStage(String(record.fields[stageFieldOf(record)] ?? ''));
@@ -184,19 +184,19 @@ export default {
                 else if (!options.includes(step.value)) report.error(`${path}.value`, `"${step.value}" isn't an option for ${field}.`, suggest(step.value, options));
             },
             async run(view, step, ctx) {
-                const select = view.find('field', ctx.name)?.querySelector('.cs-select');
+                const select = view.find('field', ctx.name)?.querySelector('.cf-select');
                 if (!select) return;
                 await ctx.cursor.moveTo(select, ctx);
                 await ctx.cursor.click(ctx);
-                select.classList.add('cs-open');
+                select.classList.add('cf-open');
                 await ctx.wait(500);
                 const option = byData(select, 'value', step.value);
                 if (option) {
                     await ctx.cursor.moveTo(option, ctx);
-                    option.classList.add('cs-hover');
+                    option.classList.add('cf-hover');
                     await ctx.cursor.click(ctx);
                 }
-                select.classList.remove('cs-open');
+                select.classList.remove('cf-open');
                 view.setField(ctx.name, step.value);
                 await ctx.wait(400);
             }
@@ -210,14 +210,14 @@ export default {
             },
             async run(view, step, ctx) {
                 const field = view.find('field', ctx.name);
-                const value = field?.querySelector('.cs-val');
+                const value = field?.querySelector('.cf-val');
                 if (!value) return;
                 await ctx.cursor.moveTo(value, ctx);
                 await ctx.cursor.click(ctx);
-                field.classList.add('cs-editing');
+                field.classList.add('cf-editing');
                 await typeInto(value, step.text, ctx);
-                field.classList.remove('cs-editing');
-                field.classList.add('cs-dirty');
+                field.classList.remove('cf-editing');
+                field.classList.add('cf-dirty');
                 await ctx.wait(300);
             }
         },
@@ -229,10 +229,10 @@ export default {
                 const button = view.find('button', ctx.name);
                 if (!button) return;
                 await ctx.cursor.moveTo(button, ctx);
-                button.classList.add('cs-pressed');
+                button.classList.add('cf-pressed');
                 await ctx.cursor.click(ctx);
-                button.classList.remove('cs-pressed');
-                if (button.classList.contains('cs-primary')) view.save();
+                button.classList.remove('cf-pressed');
+                if (button.classList.contains('cf-primary')) view.save();
                 await ctx.wait(250);
             }
         },

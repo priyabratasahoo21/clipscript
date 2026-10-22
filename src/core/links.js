@@ -14,7 +14,7 @@ export class Links {
     constructor(world) {
         this.trails = [];
         this.svg = s('svg', {
-            class: 'cs-links',
+            class: 'cf-links',
             viewBox: `0 0 ${WORLD.width} ${WORLD.height}`,
             width: String(WORLD.width),
             height: String(WORLD.height),
@@ -43,8 +43,8 @@ export class Links {
         const a = resolve(from);
         const b = resolve(to);
         if (!a || !b) return;
-        const path = s('path', { class: 'cs-link', d: Links.path(a, b) });
-        const dot = s('circle', { class: 'cs-packet', r: '7' });
+        const path = s('path', { class: 'cf-link', d: Links.path(a, b) });
+        const dot = s('circle', { class: 'cf-packet', r: '7' });
         this.svg.append(path, dot);
         const length = path.getTotalLength();
         path.style.setProperty('stroke-dasharray', `${length}`);
@@ -58,7 +58,7 @@ export class Links {
         dot.remove();
         path.style.removeProperty('stroke-dasharray');
         path.style.removeProperty('stroke-dashoffset');
-        path.classList.add('cs-trail');
+        path.classList.add('cf-trail');
         this.trails.push({ from, to, path });
     }
 
@@ -73,6 +73,6 @@ export class Links {
 
     /** Light every trail (used by the recap). */
     lightAll() {
-        for (const trail of this.trails) trail.path.classList.add('cs-lit');
+        for (const trail of this.trails) trail.path.classList.add('cf-lit');
     }
 }

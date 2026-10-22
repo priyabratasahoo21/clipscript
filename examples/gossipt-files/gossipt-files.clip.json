@@ -1,0 +1,102 @@
+{
+  "$schema": "../../schema/cueflick.schema.json",
+  "cueflick": "1",
+  "title": "Ask about your files",
+  "template": "assistant-files",
+  "layout": "stage",
+  "disclaimer": "Illustration · GossipT and all files, companies, and numbers are made up",
+
+  "story": {
+    "overview": "Maya pulls two files into a GossipT prompt with @, checks each one with a hover, and gets an answer that cites them.",
+    "description": "An answer is only as good as the context behind it. This film shows files referenced inline while typing: each reference is highlighted, a hover previews it so you know it's the right file, and the reply points back to its sources.",
+    "audience": "Anyone who works with an AI assistant on their own documents",
+    "workflow": [
+      "Maya types her question and pulls in the Q3 chart and the board memo with @",
+      "She hovers each reference to check it's the right file, then sends",
+      "GossipT reads both files",
+      "GossipT answers and cites the pipeline sheet it also used"
+    ]
+  },
+
+  "design": {
+    "mode": "dark",
+    "accent": "#8ab4ff",
+    "camera": { "zoom": 1.3, "speed": 1, "ease": "gentle", "follow": true },
+    "pace": 1
+  },
+
+  "screens": {
+    "chat": {
+      "surface": "ai-chat",
+      "look": "neutral",
+      "width": 1060,
+      "app": { "name": "GossipT", "color": "#3a3a3a", "icon": "GT" },
+      "model": "GossipT 5",
+      "user": "Maya Patel",
+      "title": "Q3 board check",
+      "recents": ["Launch email draft", "Hiring plan ideas", "SQL for churn"],
+      "files": [
+        {
+          "id": "q3-chart", "name": "Q3 revenue.png", "kind": "image", "meta": "PNG · 284 KB",
+          "preview": { "title": "Revenue by month ($k)", "chart": [52, 55, 58, 61, 66, 72], "color": "#7c9cff" }
+        },
+        {
+          "id": "board-memo", "name": "Board memo, Oct.pdf", "kind": "pdf", "meta": "PDF · 6 pages",
+          "preview": { "title": "Q3 board memo", "lines": ["Revenue up 18% on Q2", "Churn steady at 2.1%", "Six roles to hire", "EMEA launch in Q1"] }
+        },
+        {
+          "id": "pipeline", "name": "Pipeline.xlsx", "kind": "sheet", "meta": "Sheet · 4 tabs",
+          "preview": {
+            "title": "Q4 pipeline",
+            "rows": [["Stage", "Deals", "Value"], ["Lead", "42", "$310k"], ["Demo", "18", "$220k"], ["Proposal", "9", "$140k"], ["Won", "7", "$96k"]]
+          }
+        }
+      ]
+    }
+  },
+
+  "chapters": [
+    {
+      "title": "Reference files",
+      "narration": "Maya types her question and pulls two files in with @.",
+      "focus": "chat.area:composer",
+      "zoom": 1.4,
+      "steps": [
+        { "prompt": "Does @q3-chart back up the growth claim in @board-memo? Keep it short.", "draft": true }
+      ]
+    },
+    {
+      "title": "Check each one",
+      "narration": "A hover previews each reference, so she knows it's the right file.",
+      "focus": "chat.area:composer",
+      "steps": [
+        { "hover": "chat.file:q3-chart", "zoom": true },
+        { "hover": "chat.file:board-memo", "zoom": true },
+        { "focus": "chat", "zoom": 1.1, "async": true },
+        { "send": true }
+      ]
+    },
+    {
+      "title": "GossipT reads them",
+      "narration": "GossipT reads both files, and checks the pipeline too.",
+      "focus": "chat.area:thread",
+      "zoom": 1.25,
+      "steps": [
+        { "think": 900 },
+        { "tool": "read_file", "input": { "file": "Q3 revenue.png" }, "result": "6 months · $52k → $72k", "ms": 800 },
+        { "tool": "read_file", "input": { "file": "Board memo, Oct.pdf" }, "result": "Claims revenue up 18% on Q2", "ms": 800 },
+        { "respond": "Mostly, yes. @q3-chart shows Q3 at *$199k* against *$165k* in Q2, up about *21%*, so the memo's *18%* is a little conservative.\n- Churn isn't in the chart, so I couldn't check it.\n- @pipeline has *$96k* won so far in Q4, on pace with Q3." }
+      ]
+    },
+    {
+      "title": "Sources you can check",
+      "narration": "The answer cites its sources, and each one previews on hover.",
+      "focus": "chat.area:thread",
+      "zoom": 1.25,
+      "steps": [
+        { "hover": "chat.file:pipeline", "zoom": true },
+        { "wait": 600 }
+      ]
+    }
+  ]
+}

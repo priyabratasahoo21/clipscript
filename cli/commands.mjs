@@ -1,17 +1,17 @@
-// clipscript CLI commands. Built on Node's standard library; Playwright is
+// cueflick CLI commands. Built on Node's standard library; Playwright is
 // loaded only by `snapshot` and `render`, and only if it is installed.
 
 import { spawn, spawnSync } from 'node:child_process';
 import { appendFile, copyFile, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, extname, join, resolve } from 'node:path';
-import { catalog, formatReport, GENERIC_ACTIONS, validate } from '../dist/clipscript.mjs';
+import { basename, dirname, extname, join, resolve, sep } from 'node:path';
+import { catalog, formatReport, GENERIC_ACTIONS, validate } from '../dist/cueflick.mjs';
 import { PACKAGE_ROOT, startPreviewServer, startStaticServer } from './server.mjs';
 
 const EXAMPLE = join(PACKAGE_ROOT, 'examples', 'closed-won', 'closed-won.clip.json');
 const GUIDE = join(PACKAGE_ROOT, 'llms.txt');
-const AI_MARKER = '<!-- clipscript -->';
+const AI_MARKER = '<!-- cueflick -->';
 const READY_TIMEOUT_MS = 15000;
 
 export class CliError extends Error {}
@@ -26,7 +26,7 @@ export function integerOption(value, name, { min, max, fallback }) {
 }
 
 async function loadClip(file) {
-    if (!file) throw new CliError('Give a clip file, e.g. `clipscript validate my-film.clip.json`.');
+    if (!file) throw new CliError('Give a clip file, e.g. `cueflick validate my-film.clip.json`.');
     let text;
     try {
         text = await readFile(file, 'utf8');
@@ -62,8 +62,8 @@ const slug = text => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|
 async function waitForReady(page, chapter) {
     // runs inside the page
     await page.waitForFunction(index => {
-        const film = globalThis.document.querySelector('clip-script');
-        if (film?.shadowRoot?.querySelector('.cs-error')) throw new Error('the clip failed to load');
+        const film = globalThis.document.querySelector('cue-flick');
+        if (film?.shadowRoot?.querySelector('.cf-error')) throw new Error('the clip failed to load');
         return film?.player?.readyChapter === index;
     }, chapter, { timeout: READY_TIMEOUT_MS });
     await page.evaluate(() => globalThis.document.fonts.ready);
@@ -116,7 +116,7 @@ export async function snapshotCommand([file], { out, width, mode, poster, offlin
         const shoot = async (params, path) => {
             await page.goto(`${server.url}/?${new URLSearchParams({ bare: '1', controls: 'none', ...(mode ? { mode } : {}), ...params })}`);
             await waitForReady(page, Number(params.chapter));
-            await page.locator('.cs-stage').screenshot({ path });
+            await page.locator('.cf-stage').screenshot({ path });
             return path;
         };
         const saved = [];
@@ -168,7 +168,7 @@ export async function renderCommand([file], { out, width, mode, offline }) {
     const { chromium } = await loadPlaywright();
     const w = integerOption(width, 'width', { min: 320, max: 3840, fallback: 1280 });
     const size = { width: w, height: Math.round(w * 9 / 16) };
-    const workDir = await mkdtemp(join(tmpdir(), 'clipscript-'));
+    const workDir = await mkdtemp(join(tmpdir(), 'cueflick-'));
     const server = await startPreviewServer(file, { port: 0, reload: false, offline });
     const browser = await chromium.launch();
     try {
@@ -180,7 +180,7 @@ export async function renderCommand([file], { out, width, mode, offline }) {
         // runs inside the page
         await page.evaluate(() => new Promise((done, fail) => {
             const timer = setTimeout(() => fail(new Error('film did not finish within 10 minutes')), 600000);
-            globalThis.document.addEventListener('clipscript:ended', () => {
+            globalThis.document.addEventListener('cueflick:ended', () => {
                 clearTimeout(timer);
                 done();
             }, { once: true });
@@ -207,23 +207,23 @@ export async function initCommand([dir = '.'], { ai }) {
     const clipPath = join(base, 'film.clip.json');
     if (existsSync(clipPath)) throw new CliError(`${clipPath} already exists; not overwriting it.`);
     const clip = JSON.parse(await readFile(EXAMPLE, 'utf8'));
-    clip.$schema = 'https://unpkg.com/clipscript/schema/clipscript.schema.json';
+    clip.$schema = 'https://unpkg.com/cueflick/schema/cueflick.schema.json';
     await writeFile(clipPath, `${JSON.stringify(clip, null, 2)}\n`, { flag: 'wx' });
     console.log(`Created ${clipPath}`);
     if (ai) {
-        const block = `\n${AI_MARKER}\n## Product films (ClipScript)\n\nTo make or edit a product film, read \`node_modules/clipscript/llms.txt\` first. Write clips as \`*.clip.json\`, then run \`npx clipscript validate <file>\` and fix every error, and \`npx clipscript snapshot <file>\` and look at each PNG before finishing.\n`;
+        const block = `\n${AI_MARKER}\n## Product films (Cueflick)\n\nTo make or edit a product film, read \`node_modules/cueflick/llms.txt\` first. Write clips as \`*.clip.json\`, then run \`npx cueflick validate <file>\` and fix every error, and \`npx cueflick snapshot <file>\` and look at each PNG before finishing.\n`;
         for (const name of ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md']) {
             const path = join(base, name);
             const current = existsSync(path) ? await readFile(path, 'utf8') : '';
             if (current.includes(AI_MARKER)) {
-                console.log(`${name} already mentions ClipScript`);
+                console.log(`${name} already mentions Cueflick`);
                 continue;
             }
             await appendFile(path, block);
-            console.log(`Added ClipScript guidance to ${path}`);
+            console.log(`Added Cueflick guidance to ${path}`);
         }
     }
-    console.log('Next: npx clipscript preview film.clip.json');
+    console.log('Next: npx cueflick preview film.clip.json');
     return 0;
 }
 
@@ -249,11 +249,32 @@ const escapeHtml = text => String(text).replace(/&/g, '&amp;').replace(/</g, '&l
 const inlineScriptSafe = text => text.replace(/<\/(script)/gi, '<\\/$1').replace(/<!--/g, '<\\!--');
 
 /** A single self-contained HTML file: the player and the clip inlined, nothing else to host. */
+const IMAGE_MIME = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.avif': 'image/avif' };
+const MAX_INLINE_IMAGE = 8 * 1024 * 1024;
+
+/** A shared film has to stand alone: images that sit beside the clip are embedded as data: URLs. */
+async function inlineImages(clip, baseDir) {
+    for (const screen of Object.values(clip.screens)) {
+        for (const item of Array.isArray(screen.files) ? screen.files : []) {
+            const src = item?.src;
+            if (typeof src !== 'string' || /^(?:https:|data:)/i.test(src)) continue;
+            const path = resolve(baseDir, src);
+            if (!path.startsWith(baseDir + sep)) throw new CliError(`${src} is outside the clip's folder.`);
+            const bytes = await readFile(path).catch(() => {
+                throw new CliError(`Can't read ${src} (looked for ${path}).`);
+            });
+            if (bytes.length > MAX_INLINE_IMAGE) throw new CliError(`${src} is over 8 MB; use a smaller image.`);
+            item.src = `data:${IMAGE_MIME[extname(path).toLowerCase()]};base64,${bytes.toString('base64')}`;
+        }
+    }
+}
+
 export async function exportCommand([file], { out, offline }) {
     const clip = await loadValidClip(file);
+    await inlineImages(clip, dirname(resolve(file)));
     const target = resolve(out ?? `${stem(file)}.html`);
     if (extname(target).toLowerCase() !== '.html') throw new CliError('--out must end in .html');
-    const player = await readFile(join(PACKAGE_ROOT, 'dist', 'clipscript.min.js'), 'utf8');
+    const player = await readFile(join(PACKAGE_ROOT, 'dist', 'cueflick.min.js'), 'utf8');
     // JSON with "<" escaped can't close the <script> element it sits in
     const json = JSON.stringify(clip, null, 2).replace(/</g, '\\u003c');
     const fonts = offline ? '' : '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">\n';
@@ -276,9 +297,9 @@ ${fonts}<style>
 <main>
 <h1>${escapeHtml(clip.title)}</h1>
 <p>${escapeHtml(clip.story.overview)}</p>
-<clip-script><script type="application/json">
+<cue-flick><script type="application/json">
 ${json}
-</script></clip-script>
+</script></cue-flick>
 </main>
 </body>
 </html>

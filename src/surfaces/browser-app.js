@@ -68,60 +68,60 @@ const rowIds = def => (Array.isArray(def.rows) ? def.rows.map(row => row.id) : [
 const rowById = (def, id) => def.rows.find(row => row.id === id);
 
 function statusPill(status, tone) {
-    return h('span', { class: `cs-pill cs-tone-${tone ?? toneOf(status)}`, text: status });
+    return h('span', { class: `cf-pill cf-tone-${tone ?? toneOf(status)}`, text: status });
 }
 
 function render(def) {
     const { app } = def;
-    const tab = h('div', { class: 'cs-bw-tab' }, [appIcon(app), h('span', { text: def.tab ?? `${def.title ?? 'Home'} · ${app.name}` }), h('span', { class: 'cs-bw-x', text: '×' })]);
-    const chrome = h('div', { class: 'cs-bw-chrome' }, [
-        h('div', { class: 'cs-bw-tabs' }, [h('span', { class: 'cs-bw-dots', 'aria-hidden': 'true' }, [h('i'), h('i'), h('i')]), tab]),
-        h('div', { class: 'cs-bw-bar' }, [
-            h('span', { class: 'cs-bw-nav', text: '‹  ›  ⟳' }),
-            h('div', { class: 'cs-bw-url' }, [h('span', { class: 'cs-bw-lock', text: '🔒' }), h('span', { text: def.url ?? 'app.example.com' })])
+    const tab = h('div', { class: 'cf-bw-tab' }, [appIcon(app), h('span', { text: def.tab ?? `${def.title ?? 'Home'} · ${app.name}` }), h('span', { class: 'cf-bw-x', text: '×' })]);
+    const chrome = h('div', { class: 'cf-bw-chrome' }, [
+        h('div', { class: 'cf-bw-tabs' }, [h('span', { class: 'cf-bw-dots', 'aria-hidden': 'true' }, [h('i'), h('i'), h('i')]), tab]),
+        h('div', { class: 'cf-bw-bar' }, [
+            h('span', { class: 'cf-bw-nav', text: '‹  ›  ⟳' }),
+            h('div', { class: 'cf-bw-url' }, [h('span', { class: 'cf-bw-lock', text: '🔒' }), h('span', { text: def.url ?? 'app.example.com' })])
         ])
     ]);
 
-    const header = h('div', { class: 'cs-ba-header' }, [
-        h('div', { class: 'cs-ba-brand' }, [appIcon(app), h('span', { text: app.name.toLowerCase() })]),
-        def.company ? h('div', { class: 'cs-ba-company', text: def.company }) : null,
-        h('div', { class: 'cs-ba-search', text: 'Search' }),
-        h('span', { class: 'cs-ba-new', text: '+ New' }),
-        h('span', { class: 'cs-avatar cs-ba-avatar', style: { '--avatar': 'var(--app)' }, text: initials(def.company ?? app.name) })
+    const header = h('div', { class: 'cf-ba-header' }, [
+        h('div', { class: 'cf-ba-brand' }, [appIcon(app), h('span', { text: app.name.toLowerCase() })]),
+        def.company ? h('div', { class: 'cf-ba-company', text: def.company }) : null,
+        h('div', { class: 'cf-ba-search', text: 'Search' }),
+        h('span', { class: 'cf-ba-new', text: '+ New' }),
+        h('span', { class: 'cf-avatar cf-ba-avatar', style: { '--avatar': 'var(--app)' }, text: initials(def.company ?? app.name) })
     ]);
-    const nav = h('div', { class: 'cs-ba-nav' }, (def.nav ?? []).map(item => h('div', { class: item === def.active ? 'cs-ba-link cs-active' : 'cs-ba-link', text: item })));
+    const nav = h('div', { class: 'cf-ba-nav' }, (def.nav ?? []).map(item => h('div', { class: item === def.active ? 'cf-ba-link cf-active' : 'cf-ba-link', text: item })));
 
     const summary = Array.isArray(def.summary) && def.summary.length
-        ? h('div', { class: 'cs-ba-cards' }, def.summary.map(card => h('div', { class: `cs-ba-card cs-tone-${card.tone ?? 'muted'}` }, [
-            h('div', { class: 'cs-ba-card-label', text: card.label }),
-            h('div', { class: 'cs-ba-card-value', text: card.value })
+        ? h('div', { class: 'cf-ba-cards' }, def.summary.map(card => h('div', { class: `cf-ba-card cf-tone-${card.tone ?? 'muted'}` }, [
+            h('div', { class: 'cf-ba-card-label', text: card.label }),
+            h('div', { class: 'cf-ba-card-value', text: card.value })
         ])))
         : null;
 
     const statusIndex = def.columns.length - 1;
-    const rowEl = row => h('tr', { class: row.new ? 'cs-ba-row cs-pending' : 'cs-ba-row', dataset: { row: row.id } }, [
+    const rowEl = row => h('tr', { class: row.new ? 'cf-ba-row cf-pending' : 'cf-ba-row', dataset: { row: row.id } }, [
         ...row.cells.map(cell => h('td', { text: String(cell) })),
         row.status !== undefined ? h('td', {}, statusPill(row.status, row.tone)) : null
     ]);
     const tbody = h('tbody', {}, def.rows.map(rowEl));
-    const table = h('table', { class: 'cs-ba-table' }, [
-        h('thead', {}, h('tr', {}, def.columns.map((column, i) => h('th', { class: i === statusIndex ? 'cs-ba-status-col' : null, text: column })))),
+    const table = h('table', { class: 'cf-ba-table' }, [
+        h('thead', {}, h('tr', {}, def.columns.map((column, i) => h('th', { class: i === statusIndex ? 'cf-ba-status-col' : null, text: column })))),
         tbody
     ]);
 
-    const drawerBody = h('div', { class: 'cs-ba-drawer-body' });
-    const drawerTitle = h('div', { class: 'cs-ba-drawer-title' });
-    const drawer = h('div', { class: 'cs-ba-drawer' }, [h('div', { class: 'cs-ba-drawer-head' }, [drawerTitle, h('span', { class: 'cs-bw-x', text: '×' })]), drawerBody]);
-    const toast = h('div', { class: 'cs-ba-toast', role: 'status' });
+    const drawerBody = h('div', { class: 'cf-ba-drawer-body' });
+    const drawerTitle = h('div', { class: 'cf-ba-drawer-title' });
+    const drawer = h('div', { class: 'cf-ba-drawer' }, [h('div', { class: 'cf-ba-drawer-head' }, [drawerTitle, h('span', { class: 'cf-bw-x', text: '×' })]), drawerBody]);
+    const toast = h('div', { class: 'cf-ba-toast', role: 'status' });
 
-    const page = h('div', { class: 'cs-ba-page' }, [
-        h('div', { class: 'cs-ba-title-row' }, [h('div', { class: 'cs-ba-title', text: def.title ?? 'Overview' }), h('span', { class: 'cs-ba-primary', text: `Create ${(def.title ?? 'item').replace(/s$/, '').toLowerCase()}` })]),
+    const page = h('div', { class: 'cf-ba-page' }, [
+        h('div', { class: 'cf-ba-title-row' }, [h('div', { class: 'cf-ba-title', text: def.title ?? 'Overview' }), h('span', { class: 'cf-ba-primary', text: `Create ${(def.title ?? 'item').replace(/s$/, '').toLowerCase()}` })]),
         summary,
-        h('div', { class: 'cs-ba-table-wrap' }, table)
+        h('div', { class: 'cf-ba-table-wrap' }, table)
     ]);
-    const el = h('div', { class: 'cs-window cs-browser' }, [
+    const el = h('div', { class: 'cf-window cf-browser' }, [
         chrome,
-        h('div', { class: 'cs-ba-app' }, [header, h('div', { class: 'cs-ba-body' }, [nav, page, drawer])]),
+        h('div', { class: 'cf-ba-app' }, [header, h('div', { class: 'cf-ba-body' }, [nav, page, drawer])]),
         toast
     ]);
 
@@ -131,32 +131,32 @@ function render(def) {
         reveal(id) {
             const row = byData(tbody, 'row', id);
             if (!row) return;
-            row.classList.remove('cs-pending');
-            row.classList.add('cs-added');
+            row.classList.remove('cf-pending');
+            row.classList.add('cf-added');
         },
         setStatus(id, status) {
             const cell = byData(tbody, 'row', id)?.lastElementChild;
             if (cell) cell.replaceChildren(statusPill(status));
         },
         select(id) {
-            for (const row of tbody.children) row.classList.toggle('cs-selected', row.dataset.row === id);
+            for (const row of tbody.children) row.classList.toggle('cf-selected', row.dataset.row === id);
             const data = rowById(def, id);
             if (!data) return;
             drawerTitle.textContent = `${def.columns[0]} ${data.cells[0]}`;
             const fields = def.columns.slice(1, data.cells.length).map((column, i) => [column, String(data.cells[i + 1])]);
             const extra = isObject(data.detail) ? Object.entries(data.detail) : [];
             drawerBody.replaceChildren(
-                ...[...fields, ...extra].map(([label, value]) => h('div', { class: 'cs-ba-field' }, [h('span', { text: label }), h('b', { text: value })])),
-                data.status ? h('div', { class: 'cs-ba-field' }, [h('span', { text: 'Status' }), statusPill(byData(tbody, 'row', id)?.querySelector('.cs-pill')?.textContent ?? data.status)]) : null
+                ...[...fields, ...extra].map(([label, value]) => h('div', { class: 'cf-ba-field' }, [h('span', { text: label }), h('b', { text: value })])),
+                data.status ? h('div', { class: 'cf-ba-field' }, [h('span', { text: 'Status' }), statusPill(byData(tbody, 'row', id)?.querySelector('.cf-pill')?.textContent ?? data.status)]) : null
             );
-            drawer.classList.add('cs-open');
+            drawer.classList.add('cf-open');
         },
         showToast(text) {
             toast.textContent = `✓ ${text}`;
-            toast.classList.add('cs-show');
+            toast.classList.add('cf-show');
         },
         hideToast() {
-            toast.classList.remove('cs-show');
+            toast.classList.remove('cf-show');
         }
     };
 }

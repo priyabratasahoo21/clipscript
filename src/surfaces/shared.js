@@ -8,7 +8,7 @@ import { initials } from '../core/util.js';
 /** Square monogram for an app (uses the window's --app colour unless given). */
 export function appIcon(app, color) {
     return h('span', {
-        class: 'cs-appicon',
+        class: 'cf-appicon',
         style: color ? { '--app': color } : undefined,
         text: app?.icon ?? initials(app?.name ?? '?')
     });
@@ -19,13 +19,13 @@ export function appIcon(app, color) {
  * @returns {{el: HTMLElement, body: HTMLElement}}
  */
 export function appWindow(app, { title, trailing, className }) {
-    const body = h('div', { class: 'cs-body' });
-    const el = h('div', { class: `cs-window ${className}` }, [
-        h('div', { class: 'cs-appbar' }, [
+    const body = h('div', { class: 'cf-body' });
+    const el = h('div', { class: `cf-window ${className}` }, [
+        h('div', { class: 'cf-appbar' }, [
             appIcon(app),
-            h('span', { class: 'cs-appname', text: app.name }),
-            title ? h('span', { class: 'cs-apptitle', text: title }) : null,
-            trailing ? h('span', { class: 'cs-apptrail' }, trailing) : null
+            h('span', { class: 'cf-appname', text: app.name }),
+            title ? h('span', { class: 'cf-apptitle', text: title }) : null,
+            trailing ? h('span', { class: 'cf-apptrail' }, trailing) : null
         ]),
         body
     ]);

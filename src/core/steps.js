@@ -6,20 +6,34 @@
 import { hasOwn, parseSelector } from './util.js';
 
 /** Actions every clip can use, whatever its screens. */
-export const GENERIC_ACTIONS = ['focus', 'caption', 'wait', 'packet', 'enter', 'exit', 'front'];
+export const GENERIC_ACTIONS = ['focus', 'pan', 'dive', 'blur', 'caption', 'wait', 'packet', 'enter', 'exit', 'front', 'spawn', 'move', 'leave', 'confetti', 'backdrop'];
 
 /** Extra keys each generic action reads. */
+const MOTION_KEYS = ['duration', 'ease'];
+
 export const GENERIC_KEYS = {
-    focus: ['zoom'],
+    focus: ['zoom', ...MOTION_KEYS, 'async'],
+    pan: [...MOTION_KEYS, 'async'],
+    dive: [...MOTION_KEYS, 'into'],
+    blur: ['amount'],
     caption: [],
     wait: [],
     packet: [],
-    enter: ['from'],
-    exit: ['to'],
-    front: ['dim']
+    enter: ['from', ...MOTION_KEYS],
+    exit: ['to', ...MOTION_KEYS],
+    front: ['dim'],
+    spawn: ['at', 'perch', 'offset', 'effect', 'stagger', 'bounces', 'bounciness'],
+    move: ['to', 'perch', 'offset', 'path', 'height', 'bounces', 'bounciness', ...MOTION_KEYS, 'async'],
+    leave: ['effect'],
+    confetti: ['count', 'colors', 'power'],
+    backdrop: []
 };
 
-export const DIRECTIONS = ['left', 'right', 'top', 'bottom', 'fade', 'zoom'];
+/** Keys any surface step may add: the screen it runs on, and a per-step punch-in override. */
+export const SURFACE_STEP_KEYS = ['on', 'punch'];
+
+/** How screens enter and exit. */
+export const DIRECTIONS = ['left', 'right', 'top', 'bottom', 'fade', 'zoom', 'pop', 'drop', 'launch', 'minimize', 'flip'];
 
 /** Generic actions whose value is a screen id. */
 export const SCREEN_ACTIONS = ['enter', 'exit', 'front'];

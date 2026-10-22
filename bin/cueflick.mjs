@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// clipscript command-line interface.
+// cueflick command-line interface.
 
 import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
@@ -16,18 +16,18 @@ import {
     validateCommand
 } from '../cli/commands.mjs';
 
-const HELP = `ClipScript — product films for software, written as data
+const HELP = `Cueflick — product films for software, written as data
 
 Usage
-  clipscript validate <file...> [--json]       check clip scripts; errors include a path and a hint
-  clipscript preview <file> [--port 4321]      play a clip locally; reloads when the file changes
-  clipscript snapshot <file> [--out dir]       save one PNG per chapter (needs Playwright); --poster poster.png too
-  clipscript render <file> [--out film.mp4]    record the film to .mp4, .gif, or .webm (needs Playwright; ffmpeg for mp4/gif)
-  clipscript export <file> [--out film.html]   one self-contained HTML file to share or host anywhere
-  clipscript init [dir] [--ai]                 create film.clip.json; --ai adds AI-agent guidance (AGENTS.md, CLAUDE.md, GEMINI.md)
-  clipscript catalog [--json]                  list templates, surfaces, parts, and actions
-  clipscript guide                             print the authoring guide for AI agents (llms.txt)
-  clipscript demo                              serve the bundled examples
+  cueflick validate <file...> [--json]       check clips; errors include a path and a hint
+  cueflick preview <file> [--port 4321]      play a clip locally; reloads when the file changes
+  cueflick snapshot <file> [--out dir]       save one PNG per chapter (needs Playwright); --poster poster.png too
+  cueflick render <file> [--out film.mp4]    record the film to .mp4, .gif, or .webm (needs Playwright; ffmpeg for mp4/gif)
+  cueflick export <file> [--out film.html]   one self-contained HTML file to share or host anywhere
+  cueflick init [dir] [--ai]                 create film.clip.json; --ai adds AI-agent guidance (AGENTS.md, CLAUDE.md, GEMINI.md)
+  cueflick catalog [--json]                  list templates, surfaces, parts, and actions
+  cueflick guide                             print the authoring guide for AI agents (llms.txt)
+  cueflick demo                              serve the bundled examples
 
 Options
   --width <px>      snapshot/render width (default 1280)
@@ -75,7 +75,7 @@ async function main() {
         return 0;
     }
     const command = COMMANDS[name];
-    if (!command) throw new CliError(`Unknown command "${name}". Run clipscript --help.`);
+    if (!command) throw new CliError(`Unknown command "${name}". Run cueflick --help.`);
     if (values.mode && !['dark', 'light', 'auto'].includes(values.mode)) throw new CliError('--mode must be dark, light, or auto');
     return command(args, values);
 }

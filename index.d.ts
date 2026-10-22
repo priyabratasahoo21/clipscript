@@ -1,4 +1,4 @@
-// Type definitions for clipscript 0.2
+// Type definitions for cueflick 0.3
 
 export declare const version: string;
 export declare const FORMAT_VERSION: '1';
@@ -10,10 +10,17 @@ export type Mode = 'dark' | 'light' | 'auto';
 export type Aspect = 'auto' | '16:9' | '4:5' | '1:1';
 export type Layout = 'row' | 'stage' | 'desktop';
 export type Slot = 'left' | 'center' | 'right' | 'wide-left' | 'wide-right' | 'full' | 'pip' | 'pip-left';
-export type Direction = 'left' | 'right' | 'top' | 'bottom' | 'fade' | 'zoom';
+export type Direction = 'left' | 'right' | 'top' | 'bottom' | 'fade' | 'zoom' | 'pop' | 'drop' | 'launch' | 'minimize' | 'flip';
+export type Ease = 'smooth' | 'snappy' | 'linear' | 'gentle' | 'spring';
+/** A stage colour, or two for a top-to-bottom gradient. */
+export type Backdrop = string | [string] | [string, string];
+/** Punch in on clicks: true, a zoom amount (1.05–2), or { amount, hold }. */
+export type Punch = boolean | number | { amount?: number; hold?: number };
+/** Where an actor goes: a target (with "perch" it sits on top) or a world point. */
+export type Spot = Target | { x: number; y: number };
 export type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'muted';
 
-/** "screen" or "screen.part:name", e.g. "crm.field:Stage", "flow.node:trigger", "books.row:1042". */
+/** "screen", "screen.part:name", an actor id, or "actor.piece:2", e.g. "crm.field:Stage", "chat.file:q3", "tiles.piece:1". */
 export type Target = string;
 
 export interface Rect { x: number; y: number; w: number; h: number }
@@ -42,11 +49,21 @@ export interface Design {
     accent?: string;
     font?: { ui?: string; mono?: string };
     radius?: number;
-    camera?: { zoom?: number; speed?: number };
+    camera?: {
+        zoom?: number;
+        speed?: number;
+        ease?: Ease;
+        punch?: Punch;
+        /** Ease toward what each step acts on, and keep a caret in view while typing. */
+        follow?: boolean;
+    };
     pace?: number;
     intro?: boolean;
     subtitles?: boolean;
     endcard?: boolean;
+    /** false hides the pointer (touch-first films). */
+    cursor?: boolean;
+    backdrop?: Backdrop;
 }
 
 /** Options every screen accepts. */
@@ -124,6 +141,18 @@ export interface Connector {
     enabled?: boolean;
 }
 
+export interface ChatFile {
+    /** Referenced in prompts and replies as "@id". */
+    id: string;
+    name: string;
+    kind?: 'image' | 'doc' | 'pdf' | 'sheet';
+    meta?: string;
+    /** A real image for the preview: an https URL, a path in the clip's folder, or a data:image/… URL. */
+    src?: string;
+    /** Otherwise the preview is drawn from this. */
+    preview?: { title?: string; lines?: string[]; chart?: number[]; rows?: string[][]; color?: string };
+}
+
 export interface AiChatScreen extends ScreenBase {
     surface: 'ai-chat';
     assistant?: string;
@@ -131,8 +160,55 @@ export interface AiChatScreen extends ScreenBase {
     user?: string;
     title?: string;
     greeting?: string;
+    placeholder?: string;
+    /** warm: soft and serif; neutral: plain grey and sans-serif. */
+    look?: 'warm' | 'neutral';
     recents?: string[];
     connectors?: Connector[];
+    files?: ChatFile[];
+}
+
+export interface Notification {
+    id?: string;
+    app: string;
+    title?: string;
+    text: string;
+    /** 1–3 characters: a monogram or an emoji. */
+    icon?: string;
+    color?: string;
+    time?: string;
+}
+
+export interface ListRow {
+    id: string;
+    label: string;
+    icon?: string;
+    color?: string;
+    detail?: string;
+    value?: string;
+    /** A switch, on or off. */
+    toggle?: boolean;
+    chevron?: boolean;
+}
+
+export interface PhoneScreen extends ScreenBase {
+    surface: 'phone';
+    time?: string;
+    date?: string;
+    /** The assistant's name; default "Iris". */
+    assistant?: string;
+    /** Cards in liquid glass, light, or dark. */
+    material?: 'glass' | 'light' | 'dark';
+    wallpaper?: string | string[];
+    /** Screen corner radius in px (24–60); the frame and the Screen Pool stay concentric with it. */
+    corner?: number;
+    /** The expanded Screen Pool's gap from the top and sides, in px (4–16). */
+    poolInset?: number;
+    /** 2–7 colours for the assistant's edge light. */
+    glow?: string[];
+    notifications?: Notification[];
+    screen?: 'lock' | 'list';
+    list?: { title: string; circles?: string[]; sections: Array<{ title?: string; rows: ListRow[] }> };
 }
 
 export interface TableRow {
@@ -164,16 +240,48 @@ export type Screen =
     | TeamChatScreen
     | AiChatScreen
     | BrowserAppScreen
+    | PhoneScreen
     | (ScreenBase & { surface: string } & Record<string, unknown>);
 
+/** A character: a sphere, block, pill, or ring (or a group of them) that moves like an actor. */
+export interface Actor {
+    shape?: 'sphere' | 'block' | 'pill' | 'ring';
+    color?: string;
+    /** One colour per piece of a group (they repeat). */
+    colors?: string[];
+    /** World units, 16–600. */
+    size?: number;
+    /** Pieces in a group (1–24), laid out in a grid. */
+    count?: number;
+    columns?: number;
+    gap?: number;
+    label?: string;
+    labels?: string[];
+    at?: { x: number; y: number };
+    /** How much it squashes and stretches, 0–2 (spheres 1, blocks 0.4). */
+    squash?: number;
+    finish?: 'gloss' | 'matte' | 'glass';
+}
+
+type Motion = { duration?: number; ease?: Ease };
+type Bounce = { bounces?: number; bounciness?: number };
+
 export type Step =
-    | { focus: Target | 'all'; zoom?: number }
+    | ({ focus: Target | 'all'; zoom?: number; async?: boolean } & Motion)
+    | ({ pan: Target | { x?: number; y?: number }; async?: boolean } & Motion)
+    | ({ dive: Target; into?: Backdrop } & Motion)
+    | { blur: Target | false; amount?: number }
     | { caption: string }
     | { wait: number }
     | { packet: { from: Target; to: Target } }
-    | { enter: string; from?: Direction }
-    | { exit: string; to?: Direction }
+    | ({ enter: string; from?: Direction } & Motion)
+    | ({ exit: string; to?: Direction } & Motion)
     | { front: string; dim?: boolean }
+    | ({ spawn: string | string[]; effect?: 'pop' | 'drop' | 'rise' | 'fade'; stagger?: number; at?: Spot; perch?: boolean; offset?: { x: number; y: number } } & Bounce)
+    | ({ move: string; to: Spot; path?: 'hop' | 'bounce' | 'roll' | 'slide' | 'float'; perch?: boolean; offset?: { x: number; y: number }; height?: number; async?: boolean } & Motion & Bounce)
+    | { leave: string | string[]; effect?: 'pop' | 'fall' | 'shrink' | 'fade' }
+    | { confetti: Spot; count?: number; colors?: string[]; power?: number }
+    | { backdrop: Backdrop }
     | { choose: Target; value: string; on?: string }
     | { type: Target; text: string; on?: string }
     | { click: Target; on?: string }
@@ -185,7 +293,15 @@ export type Step =
     | { react: { emoji: string; count?: number }; on?: string }
     | { reply: ChatMessage; on?: string }
     | { connect: Target; on?: string }
-    | { prompt: string; on?: string }
+    | { prompt: string; draft?: boolean; on?: string }
+    | { send: true; on?: string }
+    | { hover: Target; zoom?: boolean | number; ms?: number; on?: string }
+    | { notify: Notification; on?: string }
+    | { ask: string; ms?: number; on?: string }
+    | { summarize: string; title?: string; ms?: number; on?: string }
+    | { pool: 'idle' | 'music' | 'iris'; title?: string; artist?: string; art?: string[]; expand?: boolean; ms?: number; on?: string }
+    | { toggle: Target; on?: boolean }
+    | { tap: Target; on?: string }
     | { think: number; on?: string }
     | { tool: string; connector?: string; input?: Record<string, unknown>; result?: string; ms?: number; on?: string }
     | { respond: string; on?: string }
@@ -199,19 +315,25 @@ export interface Chapter {
     narration?: string;
     focus?: Target | 'all';
     zoom?: number;
+    duration?: number;
+    ease?: Ease;
+    /** Start the steps while the camera is still moving. */
+    async?: boolean;
+    backdrop?: Backdrop;
     steps: Step[];
 }
 
 export interface Clip {
     $schema?: string;
-    clipscript: '1';
+    cueflick: '1';
     title: string;
-    template: 'trigger-automation-notify' | 'assistant-connector' | (string & {});
+    template: 'assistant-files' | 'phone-feature' | 'assistant-connector' | 'trigger-automation-notify' | (string & {});
     layout?: Layout;
     disclaimer?: string;
     story: Story;
     design?: Design;
     screens: Record<string, Screen>;
+    actors?: Record<string, Actor>;
     chapters: Chapter[];
 }
 
@@ -265,7 +387,7 @@ export declare class Player {
     destroy(): void;
 }
 
-export interface ClipScriptElement extends HTMLElement {
+export interface CueflickElement extends HTMLElement {
     clip: Clip | null;
     readonly player: Player | null;
     play(): void;
@@ -274,7 +396,7 @@ export interface ClipScriptElement extends HTMLElement {
     goTo(index: number): void;
 }
 
-export declare function mount(target: Element, clip: Clip | string, options?: MountOptions): ClipScriptElement;
+export declare function mount(target: Element, clip: Clip | string, options?: MountOptions): CueflickElement;
 export declare function defineElement(tagName?: string): void;
 
 export declare const DEFAULT_DESIGN: Readonly<Required<Design>>;
@@ -288,6 +410,12 @@ export declare const LAYOUTS: Layout[];
 export declare const SLOTS: Readonly<Record<Slot, Rect>>;
 export declare const GENERIC_ACTIONS: string[];
 export declare const DIRECTIONS: Direction[];
+export declare const EASE_NAMES: Ease[];
+export declare const EASES: Readonly<Record<Ease | 'bounce', (t: number) => number>>;
+export declare const SHAPES: Array<NonNullable<Actor['shape']>>;
+export declare const PATHS: Array<'hop' | 'bounce' | 'roll' | 'slide' | 'float'>;
+export declare const SPAWN_EFFECTS: Array<'pop' | 'drop' | 'rise' | 'fade'>;
+export declare const LEAVE_EFFECTS: Array<'pop' | 'fall' | 'shrink' | 'fade'>;
 
 export interface LayoutEntry {
     key: string;
@@ -308,6 +436,14 @@ export interface StepContext {
     cursor: { moveTo(el: Element, ctx: StepContext, offset?: { dx?: number; dy?: number }): Promise<void>; click(ctx: StepContext): Promise<void>; hide(): void };
     /** Part name from the step's target, e.g. "Stage" for "crm.field:Stage". */
     name: string | null;
+    /** Camera moves a surface may make: frame a detail and come back, or keep something in view while following. */
+    camera: {
+        look(el: Element, options?: { zoom?: number } & Motion): Promise<void>;
+        back(options?: Motion): Promise<void>;
+        track(el: Element, within?: Element): void;
+    };
+    /** Punch-in settings for this step, or null. */
+    punch: { amount: number; hold: number } | null;
 }
 
 export interface SurfaceView {
@@ -371,7 +507,7 @@ export declare function richText(text: string): DocumentFragment;
 
 // ---------- DOM and JSX ----------
 
-interface ClipScriptAttributes {
+interface CueflickAttributes {
     src?: string;
     autoplay?: 'view' | 'none';
     controls?: 'none';
@@ -388,18 +524,18 @@ interface ClipScriptAttributes {
 
 declare global {
     interface HTMLElementTagNameMap {
-        'clip-script': ClipScriptElement;
+        'cue-flick': CueflickElement;
     }
     interface HTMLElementEventMap {
-        'clipscript:chapter': CustomEvent<{ index: number; title: string }>;
-        'clipscript:ready': CustomEvent<{ chapter: number }>;
-        'clipscript:ended': CustomEvent<Record<string, never>>;
-        'clipscript:error': CustomEvent<{ error?: Error; result?: ValidationResult }>;
+        'cueflick:chapter': CustomEvent<{ index: number; title: string }>;
+        'cueflick:ready': CustomEvent<{ chapter: number }>;
+        'cueflick:ended': CustomEvent<Record<string, never>>;
+        'cueflick:error': CustomEvent<{ error?: Error; result?: ValidationResult }>;
     }
-    // lets <clip-script src="..."> type-check in TSX
+    // lets <cue-flick src="..."> type-check in TSX
     namespace JSX {
         interface IntrinsicElements {
-            'clip-script': ClipScriptAttributes;
+            'cue-flick': CueflickAttributes;
         }
     }
 }

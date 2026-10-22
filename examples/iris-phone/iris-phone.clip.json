@@ -1,0 +1,148 @@
+{
+  "$schema": "../../schema/cueflick.schema.json",
+  "cueflick": "1",
+  "title": "Less noise, more now",
+  "template": "phone-feature",
+  "layout": "stage",
+  "disclaimer": "Illustration · Iris, the phone, and all people and messages are made up",
+
+  "story": {
+    "overview": "Notifications pile up on the lock screen; Iris folds them into one summary, music keeps playing in the Screen Pool, and what matters lands in its place.",
+    "description": "A phone hears from everyone all day. This film shows an assistant turning a pile of notifications into one short summary, a live activity growing out of the Screen Pool, and the day's few important things set out as blocks.",
+    "audience": "Anyone with a busy phone",
+    "workflow": [
+      "Notifications pile up while you're busy",
+      "You ask Iris what you missed",
+      "Iris folds them into one short summary",
+      "Music keeps playing in the Screen Pool",
+      "The few things that matter, in their place"
+    ]
+  },
+
+  "design": {
+    "mode": "light",
+    "accent": "#a66cff",
+    "camera": { "zoom": 1.3, "speed": 1, "ease": "gentle" },
+    "cursor": false,
+    "backdrop": "#ffffff"
+  },
+
+  "screens": {
+    "phone": {
+      "surface": "phone",
+      "hidden": true,
+      "material": "glass",
+      "app": { "name": "Iris", "color": "#a66cff", "icon": "✦" },
+      "time": "9:41",
+      "date": "Saturday, October 24",
+      "wallpaper": ["#5b4bdb", "#ff8fb1", "#4fd8c8"]
+    }
+  },
+
+  "actors": {
+    "sunny": { "shape": "sphere", "color": "#ffc83d", "size": 120, "finish": "glass", "at": { "x": 690, "y": 400 } },
+    "coral": { "shape": "sphere", "color": "#ff6b5e", "size": 120, "finish": "glass", "at": { "x": 795, "y": 350 } },
+    "violet": { "shape": "sphere", "color": "#a66cff", "size": 120, "finish": "glass", "at": { "x": 905, "y": 405 } },
+    "sky": { "shape": "sphere", "color": "#3fa9ff", "size": 120, "finish": "glass", "at": { "x": 745, "y": 500 } },
+    "mint": { "shape": "sphere", "color": "#34d399", "size": 120, "finish": "glass", "at": { "x": 860, "y": 505 } },
+    "tiles": {
+      "shape": "block", "size": 190, "count": 4, "columns": 4, "gap": 40,
+      "colors": ["#ff6b5e", "#3fa9ff", "#a66cff", "#34d399"],
+      "labels": ["Dinner at 8", "2 parcels today", "6 new photos", "Dentist Thursday"],
+      "at": { "x": 800, "y": 470 }
+    }
+  },
+
+  "chapters": [
+    {
+      "title": "All day, every day",
+      "narration": "Your phone hears from everyone, all day long.",
+      "focus": "all",
+      "steps": [
+        { "spawn": ["sunny", "coral", "violet", "sky", "mint"], "effect": "pop", "stagger": 140 },
+        { "focus": "all", "duration": 1400 },
+        { "wait": 300 }
+      ]
+    },
+    {
+      "title": "The pile",
+      "narration": "While you're busy, the notifications pile up.",
+      "steps": [
+        { "move": "sunny", "to": { "x": 330, "y": 300 }, "async": true },
+        { "move": "sky", "to": { "x": 300, "y": 600 }, "async": true },
+        { "move": "violet", "to": { "x": 1290, "y": 590 }, "async": true },
+        { "move": "coral", "to": { "x": 800, "y": 120 }, "async": true },
+        { "move": "mint", "to": { "x": 1260, "y": 300 } },
+        { "focus": "all", "async": true },
+        { "enter": "phone", "from": "pop" },
+        { "move": "coral", "to": "phone", "perch": true, "height": 70 },
+        { "focus": "all", "async": true },
+        { "notify": { "id": "sam", "app": "Messages", "icon": "💬", "color": "#34c759", "title": "Sam", "text": "Can we push dinner to 8? I'll bring dessert.", "time": "2m ago" } },
+        { "notify": { "id": "courier", "app": "Parcels", "icon": "📦", "color": "#ff9f0a", "title": "Courier", "text": "2 parcels arriving today, between 1 and 3 pm.", "time": "14m ago" } },
+        { "notify": { "id": "mia", "app": "Photos", "icon": "🌅", "color": "#ff375f", "title": "Mia", "text": "Shared 6 photos from Saturday.", "time": "31m ago" } },
+        { "notify": { "id": "clinic", "app": "Calendar", "icon": "📅", "color": "#0a84ff", "title": "Dentist", "text": "Your appointment moved to Thursday at 10:00.", "time": "1h ago" } }
+      ]
+    },
+    {
+      "title": "Ask Iris",
+      "narration": "Ask Iris, and the pile becomes one short summary.",
+      "focus": "phone.area:notes",
+      "steps": [
+        { "move": "coral", "to": { "x": 1300, "y": 210 }, "async": true },
+        { "ask": "What did I miss?" },
+        { "summarize": "Sam moved dinner to 8 and is bringing dessert. Two parcels arrive between 1 and 3. Mia shared 6 photos, and the dentist moved to Thursday at 10.", "title": "4 notifications" }
+      ]
+    },
+    {
+      "title": "The Screen Pool",
+      "narration": "Music keeps playing in the Screen Pool, wherever you go.",
+      "focus": "phone.area:pool",
+      "zoom": 1.1,
+      "steps": [
+        { "pool": "music", "title": "Night Drive", "artist": "Mira Sol", "art": ["#ff7a59", "#7b2ff7"], "ms": 700 },
+        { "move": "mint", "to": "phone", "perch": true, "offset": { "x": -88, "y": 0 }, "path": "bounce", "bounces": 1, "height": 220 },
+        { "move": "mint", "to": "phone", "perch": true, "offset": { "x": 88, "y": 0 }, "path": "roll", "duration": 1900, "async": true },
+        { "pool": "music", "title": "Night Drive", "artist": "Mira Sol", "art": ["#ff7a59", "#7b2ff7"], "expand": true, "ms": 2000 },
+        { "move": "mint", "to": "phone", "perch": true, "offset": { "x": 0, "y": 0 }, "path": "roll", "ease": "spring", "duration": 1300 },
+        { "wait": 700 }
+      ]
+    },
+    {
+      "title": "In its place",
+      "narration": "The few things that matter, each in its place.",
+      "focus": "tiles",
+      "async": true,
+      "steps": [
+        { "exit": "phone", "to": "minimize" },
+        { "leave": "coral", "effect": "pop" },
+        { "spawn": "tiles", "effect": "pop", "stagger": 150 },
+        { "move": "sunny", "to": "tiles.piece:0", "perch": true, "path": "bounce", "async": true },
+        { "wait": 160 },
+        { "move": "sky", "to": "tiles.piece:1", "perch": true, "path": "bounce", "async": true },
+        { "wait": 160 },
+        { "move": "violet", "to": "tiles.piece:2", "perch": true, "path": "bounce", "async": true },
+        { "wait": 160 },
+        { "move": "mint", "to": "tiles.piece:3", "perch": true, "path": "bounce" },
+        { "focus": "tiles.piece:1", "zoom": 1.25, "duration": 1000 },
+        { "wait": 800 }
+      ]
+    },
+    {
+      "title": "Less noise",
+      "narration": "Less noise. More now.",
+      "focus": "tiles",
+      "async": true,
+      "steps": [
+        { "leave": "tiles", "effect": "shrink" },
+        { "move": "sunny", "to": { "x": 690, "y": 420 }, "height": 120, "async": true },
+        { "move": "sky", "to": { "x": 745, "y": 520 }, "height": 120, "async": true },
+        { "move": "violet", "to": { "x": 905, "y": 425 }, "height": 120, "async": true },
+        { "move": "mint", "to": { "x": 860, "y": 525 }, "height": 120 },
+        { "spawn": "coral", "at": { "x": 795, "y": 370 }, "effect": "drop" },
+        { "focus": "all", "async": true },
+        { "confetti": { "x": 800, "y": 440 }, "count": 140 },
+        { "wait": 1600 }
+      ]
+    }
+  ]
+}

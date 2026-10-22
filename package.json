@@ -1,62 +1,62 @@
 {
-  "name": "clipscript",
-  "version": "0.2.0",
-  "description": "ClipScript: product films for software, written as data. Describe a workflow across app screens in a JSON clip script and ClipScript plays it as a video-like film, or renders it to video. Any AI agent can write one.",
+  "name": "cueflick",
+  "version": "0.3.0",
+  "description": "Cueflick: product films for software, written as data. One JSON clip describes app screens, a directed camera, and motion-graphics characters; Cueflick plays it in any web page or records it to video. Any AI agent can write one.",
   "keywords": [
     "product-film",
     "demo",
     "explainer",
+    "motion-graphics",
     "animation",
+    "camera",
     "web-component",
     "custom-element",
-    "illustration",
     "walkthrough",
     "saas",
+    "video",
     "ai",
     "llm",
-    "claude",
-    "codex",
-    "mcp",
     "ai-agents",
     "agents-md",
+    "claude",
+    "codex",
     "cursor",
     "copilot",
     "gemini"
   ],
-  "homepage": "https://github.com/priyabratasahoo21/clipscript#readme",
+  "homepage": "https://github.com/priyabratasahoo21/cueflick#readme",
   "bugs": {
-    "url": "https://github.com/priyabratasahoo21/clipscript/issues"
+    "url": "https://github.com/priyabratasahoo21/cueflick/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/priyabratasahoo21/clipscript.git"
+    "url": "git+https://github.com/priyabratasahoo21/cueflick.git"
   },
   "license": "MIT",
   "author": "Priyabrata Sahoo (https://github.com/priyabratasahoo21)",
   "type": "module",
-  "main": "./dist/clipscript.mjs",
-  "module": "./dist/clipscript.mjs",
+  "main": "./dist/cueflick.mjs",
+  "module": "./dist/cueflick.mjs",
   "types": "./index.d.ts",
-  "unpkg": "./dist/clipscript.min.js",
-  "jsdelivr": "./dist/clipscript.min.js",
+  "unpkg": "./dist/cueflick.min.js",
+  "jsdelivr": "./dist/cueflick.min.js",
   "exports": {
     ".": {
       "types": "./index.d.ts",
-      "import": "./dist/clipscript.mjs",
-      "default": "./dist/clipscript.mjs"
+      "import": "./dist/cueflick.mjs",
+      "default": "./dist/cueflick.mjs"
     },
-    "./standalone": "./dist/clipscript.min.js",
-    "./schema.json": "./schema/clipscript.schema.json",
+    "./standalone": "./dist/cueflick.min.js",
+    "./schema.json": "./schema/cueflick.schema.json",
     "./package.json": "./package.json"
   },
   "bin": {
-    "clipscript": "./bin/clipscript.mjs"
+    "cueflick": "./bin/cueflick.mjs"
   },
   "files": [
     "dist",
     "bin",
     "cli",
-    "src",
     "docs",
     "schema",
     "examples",
@@ -77,7 +77,7 @@
     "test:browser": "node --test test/browser/*.test.mjs",
     "check": "npm run lint && npm run build && npm test && npm run test:browser",
     "prepublishOnly": "npm run check",
-    "demo": "node bin/clipscript.mjs demo"
+    "demo": "node bin/cueflick.mjs demo"
   },
   "peerDependencies": {
     "playwright": ">=1.40"

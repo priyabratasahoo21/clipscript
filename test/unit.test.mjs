@@ -2,7 +2,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { catalog, frameFor, LAYOUTS, layoutFor, SLOTS, WORLD } from '../dist/clipscript.mjs';
+import { catalog, EASE_NAMES, EASES, frameFor, LAYOUTS, layoutFor, SLOTS, WORLD } from '../dist/cueflick.mjs';
 
 const surface = width => ({ width });
 const entries = [
@@ -76,6 +76,25 @@ test('frameFor fits portrait stages too', () => {
 
 test('the catalog lists every built-in template and surface', () => {
     const info = catalog();
-    assert.deepEqual(info.templates.map(t => t.name).sort(), ['assistant-connector', 'trigger-automation-notify']);
-    assert.deepEqual(info.surfaces.map(s => s.name).sort(), ['ai-chat', 'browser-app', 'crm-record', 'flow-canvas', 'team-chat']);
+    assert.deepEqual(info.templates.map(t => t.name).sort(), ['assistant-connector', 'assistant-files', 'phone-feature', 'trigger-automation-notify']);
+    assert.deepEqual(info.surfaces.map(s => s.name).sort(), ['ai-chat', 'browser-app', 'crm-record', 'flow-canvas', 'phone', 'team-chat']);
 });
+
+// ---------- v0.3: easing ----------
+
+
+test('every easing curve starts at 0 and ends at 1', () => {
+    for (const [name, curve] of Object.entries(EASES)) {
+        assert.ok(Math.abs(curve(0)) < 1e-9, `${name}(0)`);
+        assert.ok(Math.abs(curve(1) - 1) < 1e-9, `${name}(1)`);
+    }
+    assert.deepEqual(EASE_NAMES, ['smooth', 'snappy', 'linear', 'gentle', 'spring']);
+});
+
+test('spring overshoots and settles; snappy front-loads the motion', () => {
+    const samples = Array.from({ length: 101 }, (_, i) => EASES.spring(i / 100));
+    assert.ok(Math.max(...samples) > 1.02, 'spring should overshoot');
+    assert.ok(EASES.snappy(0.3) > EASES.smooth(0.3) + 0.3, 'snappy should be well ahead of smooth early on');
+    assert.equal(EASES.linear(0.42), 0.42);
+});
+

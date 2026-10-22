@@ -74,11 +74,11 @@ function render(def, { screens }) {
     const { el, body } = appWindow(def.app, {
         title: def.workflow ?? 'Workflow',
         trailing: [
-            h('span', { class: 'cs-flow-tabs' }, [h('span', { class: 'cs-flow-tab cs-active', text: 'Editor' }), h('span', { class: 'cs-flow-tab', text: 'Executions' })]),
-            h('span', { class: 'cs-toggle' }, [h('span', { class: 'cs-switch' }, h('i')), 'Active']),
-            h('span', { class: 'cs-save', text: 'Save' })
+            h('span', { class: 'cf-flow-tabs' }, [h('span', { class: 'cf-flow-tab cf-active', text: 'Editor' }), h('span', { class: 'cf-flow-tab', text: 'Executions' })]),
+            h('span', { class: 'cf-toggle' }, [h('span', { class: 'cf-switch' }, h('i')), 'Active']),
+            h('span', { class: 'cf-save', text: 'Save' })
         ],
-        className: 'cs-flow'
+        className: 'cf-flow'
     });
 
     const lastIndex = def.nodes.length - 1;
@@ -86,49 +86,49 @@ function render(def, { screens }) {
         const brand = nodeBrand(node, screens);
         const trigger = isTrigger(node, i);
         return h('div', {
-            class: trigger ? 'cs-node cs-trigger' : 'cs-node',
+            class: trigger ? 'cf-node cf-trigger' : 'cf-node',
             dataset: { node: node.id },
             style: brand.color ? { '--node': brand.color } : undefined
         }, [
-            h('div', { class: 'cs-node-tile' }, [
-                trigger ? h('span', { class: 'cs-node-bolt', 'aria-hidden': 'true', text: '⚡' }) : h('span', { class: 'cs-handle cs-handle-in' }),
-                h('span', { class: 'cs-node-icon', text: brand.icon }),
-                i < lastIndex ? h('span', { class: 'cs-handle cs-handle-out' }) : null,
-                h('span', { class: 'cs-node-badge', 'aria-hidden': 'true' })
+            h('div', { class: 'cf-node-tile' }, [
+                trigger ? h('span', { class: 'cf-node-bolt', 'aria-hidden': 'true', text: '⚡' }) : h('span', { class: 'cf-handle cf-handle-in' }),
+                h('span', { class: 'cf-node-icon', text: brand.icon }),
+                i < lastIndex ? h('span', { class: 'cf-handle cf-handle-out' }) : null,
+                h('span', { class: 'cf-node-badge', 'aria-hidden': 'true' })
             ]),
-            h('div', { class: 'cs-node-title', text: node.title }),
-            node.sub ? h('div', { class: 'cs-node-sub', text: node.sub }) : null,
-            h('div', { class: 'cs-node-meta' })
+            h('div', { class: 'cf-node-title', text: node.title }),
+            node.sub ? h('div', { class: 'cf-node-sub', text: node.sub }) : null,
+            h('div', { class: 'cf-node-meta' })
         ]);
     });
 
-    const wires = s('svg', { class: 'cs-wires', 'aria-hidden': 'true' });
-    const status = h('span', { class: 'cs-run-status' });
-    const canvas = h('div', { class: 'cs-canvas' }, [
-        h('div', { class: 'cs-rail', 'aria-hidden': 'true' }, [h('i', { class: 'cs-rail-on' }), h('i'), h('i'), h('i')]),
+    const wires = s('svg', { class: 'cf-wires', 'aria-hidden': 'true' });
+    const status = h('span', { class: 'cf-run-status' });
+    const canvas = h('div', { class: 'cf-canvas' }, [
+        h('div', { class: 'cf-rail', 'aria-hidden': 'true' }, [h('i', { class: 'cf-rail-on' }), h('i'), h('i'), h('i')]),
         wires,
-        h('div', { class: 'cs-nodes' }, nodeEls),
-        h('div', { class: 'cs-canvas-bar' }, [h('span', { class: 'cs-test-btn', text: '▶ Test workflow' }), status])
+        h('div', { class: 'cf-nodes' }, nodeEls),
+        h('div', { class: 'cf-canvas-bar' }, [h('span', { class: 'cf-test-btn', text: '▶ Test workflow' }), status])
     ]);
 
     // node details: input data on the left, parameters on the right
-    const ndvTitle = h('div', { class: 'cs-ndv-title' });
-    const ndvInput = h('div', { class: 'cs-ndv-col cs-ndv-input' });
-    const ndvParams = h('div', { class: 'cs-ndv-col cs-ndv-params' });
-    const ndv = h('div', { class: 'cs-ndv' }, h('div', { class: 'cs-ndv-panel' }, [
-        h('div', { class: 'cs-ndv-head' }, [h('span', { class: 'cs-ndv-back', text: '← Back to canvas' }), ndvTitle]),
-        h('div', { class: 'cs-ndv-cols' }, [ndvInput, ndvParams])
+    const ndvTitle = h('div', { class: 'cf-ndv-title' });
+    const ndvInput = h('div', { class: 'cf-ndv-col cf-ndv-input' });
+    const ndvParams = h('div', { class: 'cf-ndv-col cf-ndv-params' });
+    const ndv = h('div', { class: 'cf-ndv' }, h('div', { class: 'cf-ndv-panel' }, [
+        h('div', { class: 'cf-ndv-head' }, [h('span', { class: 'cf-ndv-back', text: '← Back to canvas' }), ndvTitle]),
+        h('div', { class: 'cf-ndv-cols' }, [ndvInput, ndvParams])
     ]));
     canvas.append(ndv);
 
-    const outputTitle = h('span', { class: 'cs-output-title', text: 'Output' });
-    const outputCount = h('span', { class: 'cs-output-count' });
+    const outputTitle = h('span', { class: 'cf-output-title', text: 'Output' });
+    const outputCount = h('span', { class: 'cf-output-count' });
     const outputData = h('pre');
-    const output = h('div', { class: 'cs-output' }, [
-        h('div', { class: 'cs-output-head' }, [
+    const output = h('div', { class: 'cf-output' }, [
+        h('div', { class: 'cf-output-head' }, [
             outputTitle,
             outputCount,
-            h('span', { class: 'cs-output-tabs' }, [h('span', { text: 'Table' }), h('span', { class: 'cs-active', text: 'JSON' })])
+            h('span', { class: 'cf-output-tabs' }, [h('span', { text: 'Table' }), h('span', { class: 'cf-active', text: 'JSON' })])
         ]),
         outputData
     ]);
@@ -142,17 +142,17 @@ function render(def, { screens }) {
         state,
         find: (part, name) => (part === 'node' ? byData(el, 'node', name) : null),
         drawWires() {
-            const lit = state.wires.map(wire => wire.group.classList.contains('cs-lit'));
+            const lit = state.wires.map(wire => wire.group.classList.contains('cf-lit'));
             const labels = state.wires.map(wire => wire.label.textContent);
             wires.replaceChildren();
             wires.setAttribute('width', String(canvas.offsetWidth));
             wires.setAttribute('height', String(canvas.offsetHeight));
             state.wires = nodeEls.slice(0, -1).map((nodeEl, i) => {
-                const geometry = wireGeometry(canvas, nodeEl.querySelector('.cs-node-tile'), nodeEls[i + 1].querySelector('.cs-node-tile'));
-                const label = s('text', { class: 'cs-wire-label', x: String(geometry.mid.x), y: String(geometry.mid.y - 10), 'text-anchor': 'middle' }, labels[i] ?? '');
-                const group = s('g', { class: lit[i] ? 'cs-wire cs-lit' : 'cs-wire' }, [
-                    s('path', { class: 'cs-wire-line', d: geometry.d }),
-                    s('path', { class: 'cs-wire-arrow', d: geometry.arrow }),
+                const geometry = wireGeometry(canvas, nodeEl.querySelector('.cf-node-tile'), nodeEls[i + 1].querySelector('.cf-node-tile'));
+                const label = s('text', { class: 'cf-wire-label', x: String(geometry.mid.x), y: String(geometry.mid.y - 10), 'text-anchor': 'middle' }, labels[i] ?? '');
+                const group = s('g', { class: lit[i] ? 'cf-wire cf-lit' : 'cf-wire' }, [
+                    s('path', { class: 'cf-wire-line', d: geometry.d }),
+                    s('path', { class: 'cf-wire-arrow', d: geometry.arrow }),
                     label
                 ]);
                 wires.append(group);
@@ -160,18 +160,18 @@ function render(def, { screens }) {
             });
         },
         markRunning(id, running) {
-            byData(el, 'node', id)?.classList.toggle('cs-running', running);
+            byData(el, 'node', id)?.classList.toggle('cf-running', running);
         },
         markDone(id, ms, result, output) {
             const nodeEl = byData(el, 'node', id);
             if (!nodeEl) return;
-            nodeEl.classList.add('cs-ok');
-            nodeEl.querySelector('.cs-node-meta').textContent = [typeof ms === 'number' ? `${ms} ms` : null, result].filter(Boolean).join(' · ');
+            nodeEl.classList.add('cf-ok');
+            nodeEl.querySelector('.cf-node-meta').textContent = [typeof ms === 'number' ? `${ms} ms` : null, result].filter(Boolean).join(' · ');
             const wire = state.wires[nodeEls.indexOf(nodeEl)];
             if (wire) {
                 const count = itemCount(output);
                 wire.label.textContent = `${count} ${count === 1 ? 'item' : 'items'}`;
-                wire.group.classList.add('cs-lit');
+                wire.group.classList.add('cf-lit');
             }
             if (output !== undefined) state.outputs[id] = output;
             state.ran += 1;
@@ -179,14 +179,14 @@ function render(def, { screens }) {
             status.textContent = state.ran >= def.nodes.length
                 ? `✓ Workflow executed successfully · ${state.totalMs} ms`
                 : `Running · ${state.ran} of ${def.nodes.length}`;
-            status.classList.toggle('cs-ok', state.ran >= def.nodes.length);
+            status.classList.toggle('cf-ok', state.ran >= def.nodes.length);
         },
         showOutput(id, data) {
             outputTitle.textContent = `Output · ${nodeById(id)?.title ?? id}`;
             const count = itemCount(data);
             outputCount.textContent = `${count} ${count === 1 ? 'item' : 'items'}`;
             outputData.replaceChildren(jsonNodes(data));
-            output.classList.add('cs-open');
+            output.classList.add('cf-open');
         },
         openDetails(id) {
             const node = nodeById(id);
@@ -194,32 +194,32 @@ function render(def, { screens }) {
             const brand = nodeBrand(node, screens);
             ndvTitle.replaceChildren(
                 appIcon({ icon: brand.icon, name: node.title }, brand.color ?? undefined),
-                h('div', {}, [h('div', { class: 'cs-ndv-name', text: node.title }), node.sub ? h('div', { class: 'cs-ndv-sub', text: node.sub }) : null])
+                h('div', {}, [h('div', { class: 'cf-ndv-name', text: node.title }), node.sub ? h('div', { class: 'cf-ndv-sub', text: node.sub }) : null])
             );
             const upstream = def.nodes.slice(0, index).reverse().find(prev => state.outputs[prev.id] !== undefined);
             ndvInput.replaceChildren(
-                h('div', { class: 'cs-ndv-label', text: 'Input' }),
+                h('div', { class: 'cf-ndv-label', text: 'Input' }),
                 upstream
-                    ? h('pre', { class: 'cs-ndv-json' }, jsonNodes(state.outputs[upstream.id]))
-                    : h('div', { class: 'cs-ndv-empty', text: 'No input data yet' })
+                    ? h('pre', { class: 'cf-ndv-json' }, jsonNodes(state.outputs[upstream.id]))
+                    : h('div', { class: 'cf-ndv-empty', text: 'No input data yet' })
             );
             const params = isObject(node.params) ? Object.entries(node.params) : [];
             ndvParams.replaceChildren(
-                h('div', { class: 'cs-ndv-label', text: 'Parameters' }),
-                ...params.map(([key, value]) => h('div', { class: 'cs-param' }, [h('span', { text: key }), h('span', { class: 'cs-param-val', text: String(value) })]))
+                h('div', { class: 'cf-ndv-label', text: 'Parameters' }),
+                ...params.map(([key, value]) => h('div', { class: 'cf-param' }, [h('span', { text: key }), h('span', { class: 'cf-param-val', text: String(value) })]))
             );
-            ndv.classList.add('cs-open');
+            ndv.classList.add('cf-open');
         },
         /** Add an expression field to the open node; returns the parts to animate. */
         addExpression(label) {
-            const editor = h('div', { class: 'cs-expr-box' });
-            const resultLabel = h('div', { class: 'cs-ndv-label cs-result-label', text: 'Result' });
-            const result = h('div', { class: 'cs-result' });
-            ndvParams.append(h('div', { class: 'cs-ndv-label', text: label }), editor, resultLabel, result);
+            const editor = h('div', { class: 'cf-expr-box' });
+            const resultLabel = h('div', { class: 'cf-ndv-label cf-result-label', text: 'Result' });
+            const result = h('div', { class: 'cf-result' });
+            ndvParams.append(h('div', { class: 'cf-ndv-label', text: label }), editor, resultLabel, result);
             return { editor, result, resultLabel };
         },
         closeDetails() {
-            ndv.classList.remove('cs-open');
+            ndv.classList.remove('cf-open');
         }
     };
 }
@@ -229,7 +229,7 @@ function expressionNodes(text) {
     const fragment = document.createDocumentFragment();
     for (const token of text.split(/(\{\{[^}]*\}\})/)) {
         if (!token) continue;
-        fragment.append(token.startsWith('{{') ? h('span', { class: 'cs-tok', text: token }) : token);
+        fragment.append(token.startsWith('{{') ? h('span', { class: 'cf-tok', text: token }) : token);
     }
     return fragment;
 }
@@ -275,7 +275,7 @@ export default {
             async run(view, _step, ctx) {
                 const nodeEl = view.find('node', ctx.name);
                 if (nodeEl) {
-                    await ctx.cursor.moveTo(nodeEl.querySelector('.cs-node-tile'), ctx);
+                    await ctx.cursor.moveTo(nodeEl.querySelector('.cf-node-tile'), ctx);
                     await ctx.cursor.click(ctx);
                 }
                 view.openDetails(ctx.name);
@@ -286,6 +286,7 @@ export default {
         expression: {
             summary: 'Type an expression into the open node and show its resolved result.',
             keys: ['preview', 'field'],
+            follow: view => view.el.querySelector('.cf-ndv-panel'),
             order(facts, _step, path, report) {
                 if (!facts.opened) report.warn(path, 'there is no open node to type into; add an "open" step first.');
             },
@@ -300,8 +301,8 @@ export default {
                 editor.replaceChildren(expressionNodes(step.expression));
                 await ctx.wait(500);
                 result.textContent = step.preview;
-                result.classList.add('cs-show');
-                resultLabel.classList.add('cs-show');
+                result.classList.add('cf-show');
+                resultLabel.classList.add('cf-show');
                 await ctx.wait(1500);
             }
         }

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ask About Files</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="../page.css">
+    <script src="../../dist/cueflick.min.js" defer></script>
+</head>
+<body>
+    <main>
+        <header>
+            <p class="eyebrow">Cueflick example · file references</p>
+            <h1>Ask about your files</h1>
+            <p class="lede">Maya pulls two files into a GossipT prompt with @, checks each one with a hover, and gets an answer
+                that cites its sources. The camera follows the typing and moves in on each preview. The film is one file:
+                <a href="gossipt-files.clip.json">gossipt-files.clip.json</a>.</p>
+        </header>
+
+        <cue-flick src="gossipt-files.clip.json"></cue-flick>
+
+        <section class="how">
+            <h2>What this example uses</h2>
+            <p>The <code>assistant-files</code> template; the <code>ai-chat</code> surface with <code>"look": "neutral"</code> and
+                a list of <code>"files"</code>; <code>"@q3-chart"</code> references in a <code>prompt</code> with <code>"draft": true</code>;
+                <code>{ "hover": "chat.file:q3-chart", "zoom": true }</code>; <code>{ "send": true }</code>; and
+                <code>"follow": true</code> on the camera so it keeps up with the typing.</p>
+            <p><a href="../">All examples</a></p>
+        </section>
+    </main>
+</body>
+</html>

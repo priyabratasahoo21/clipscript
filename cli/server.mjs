@@ -10,9 +10,11 @@ import { basename, dirname, extname, join, normalize, resolve, sep } from 'node:
 import { fileURLToPath } from 'node:url';
 
 const PACKAGE_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const PLAYER_FILE = join(PACKAGE_ROOT, 'dist', 'clipscript.min.js');
+const PLAYER_FILE = join(PACKAGE_ROOT, 'dist', 'cueflick.min.js');
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
 const FONTS = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">';
+
+const IMAGE_TYPES = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif']);
 
 const TYPES = {
     '.html': 'text/html; charset=utf-8',
@@ -23,7 +25,10 @@ const TYPES = {
     '.svg': 'image/svg+xml',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
     '.webp': 'image/webp',
+    '.avif': 'image/avif',
     '.mp4': 'video/mp4',
     '.txt': 'text/plain; charset=utf-8'
 };
@@ -51,7 +56,7 @@ function previewPage({ reload, offline }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ClipScript Preview</title>
+<title>Cueflick Preview</title>
 ${offline ? '' : FONTS}
 <style>
   body { margin: 0; background: #07080b; color: #e8ebf1; font-family: Inter, system-ui, sans-serif; }
@@ -59,10 +64,10 @@ ${offline ? '' : FONTS}
   body.bare main { max-width: none; padding: 0; }
   body.bare { overflow: hidden; }
 </style>
-<script src="/__clipscript/clipscript.min.js" defer></script>
+<script src="/__cueflick/cueflick.min.js" defer></script>
 </head>
 <body>
-<main><clip-script id="film" src="/clip.json"></clip-script></main>
+<main><cue-flick id="film" src="/clip.json"></cue-flick></main>
 <script>
   const params = new URLSearchParams(location.search);
   const film = document.getElementById('film');
@@ -100,6 +105,7 @@ function closer(server, cleanup) {
  */
 export async function startPreviewServer(clipFile, { port = 4321, reload = true, offline = false } = {}) {
     const clipPath = resolve(clipFile);
+    const clipDir = dirname(clipPath);
     const clients = new Set();
     const page = previewPage({ reload, offline });
 
@@ -110,7 +116,12 @@ export async function startPreviewServer(clipFile, { port = 4321, reload = true,
         try {
             if (pathname === '/') return send(res, 200, page, TYPES['.html']);
             if (pathname === '/clip.json') return send(res, 200, await readFile(clipPath), TYPES['.json']);
-            if (pathname === '/__clipscript/clipscript.min.js') return send(res, 200, await readFile(PLAYER_FILE), TYPES['.js']);
+            if (pathname === '/__cueflick/cueflick.min.js') return send(res, 200, await readFile(PLAYER_FILE), TYPES['.js']);
+            if (IMAGE_TYPES.has(extname(pathname).toLowerCase())) {
+                const image = resolve(clipDir, `.${decodeURIComponent(pathname)}`);
+                if (!image.startsWith(clipDir + sep)) return send(res, 403, 'Forbidden');
+                return send(res, 200, await readFile(image), TYPES[extname(image).toLowerCase()]);
+            }
             if (pathname === '/__events' && reload) {
                 res.writeHead(200, { 'Content-Type': 'text/event-stream', ...SECURITY_HEADERS });
                 clients.add(res);
@@ -119,7 +130,7 @@ export async function startPreviewServer(clipFile, { port = 4321, reload = true,
             }
             return send(res, 404, 'Not found');
         } catch (error) {
-            return send(res, 500, `Could not read file: ${error.code ?? error.message}`);
+            return send(res, error.code === 'ENOENT' ? 404 : 500, `Could not read file: ${error.code ?? error.message}`);
         }
     });
 
@@ -140,7 +151,7 @@ export async function startPreviewServer(clipFile, { port = 4321, reload = true,
 }
 
 /**
- * Static server for the bundled examples (used by `clipscript demo`).
+ * Static server for the bundled examples (used by `cueflick demo`).
  * Only files under the allow-listed folders are served; ".." escapes are rejected.
  */
 export async function startStaticServer(root, { port = 4321, allow = ['examples', 'dist'] } = {}) {

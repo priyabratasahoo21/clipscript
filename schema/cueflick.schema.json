@@ -1,0 +1,1931 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/cueflick/schema/cueflick.schema.json",
+  "title": "cueflick clip",
+  "description": "A product film for software, written as data: the story it tells, its design, the app screens it shows, and chapters of steps. This schema checks shape; `cueflick validate` also checks targets, part names, options, step order, and lengths (as warnings).",
+  "type": "object",
+  "required": [
+    "cueflick",
+    "title",
+    "template",
+    "story",
+    "screens",
+    "chapters"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "cueflick": {
+      "const": "1",
+      "description": "Format version."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Film title, shown on the intro card."
+    },
+    "template": {
+      "enum": [
+        "trigger-automation-notify",
+        "assistant-connector",
+        "assistant-files",
+        "phone-feature"
+      ],
+      "description": "Story pattern; sets the default layout and checks."
+    },
+    "layout": {
+      "enum": [
+        "row",
+        "stage",
+        "desktop"
+      ],
+      "description": "row: side by side · stage: one large screen at a time · desktop: overlapping windows. Defaults to the template's layout."
+    },
+    "disclaimer": {
+      "type": "string",
+      "description": "Shown under the player, e.g. 'Illustration · names are made up'."
+    },
+    "story": {
+      "type": "object",
+      "description": "What the film is about. Used for the intro card, the end card, and the screen-reader transcript.",
+      "required": [
+        "overview"
+      ],
+      "properties": {
+        "overview": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One or two sentences: what happens and why it matters."
+        },
+        "description": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "workflow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The process, one plain sentence per step; shown on the end card."
+        }
+      },
+      "additionalProperties": false
+    },
+    "design": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "dark",
+            "light",
+            "auto"
+          ],
+          "default": "dark"
+        },
+        "aspect": {
+          "enum": [
+            "auto",
+            "16:9",
+            "4:5",
+            "1:1"
+          ],
+          "default": "auto",
+          "description": "auto is 16:9, or 4:5 on narrow players."
+        },
+        "accent": {
+          "$ref": "#/$defs/color"
+        },
+        "font": {
+          "type": "object",
+          "properties": {
+            "ui": {
+              "type": "string",
+              "pattern": "^[\\w\\s,'\"-]+$"
+            },
+            "mono": {
+              "type": "string",
+              "pattern": "^[\\w\\s,'\"-]+$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "radius": {
+          "type": "number",
+          "description": "Corner radius, 0–24 (clamped)."
+        },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "zoom": {
+              "type": "number",
+              "description": "Maximum zoom when framing a screen, 1–2.5 (clamped)."
+            },
+            "speed": {
+              "type": "number",
+              "description": "Camera speed, 0.25–3 (clamped)."
+            },
+            "ease": {
+              "$ref": "#/$defs/ease",
+              "description": "Default easing for camera moves."
+            },
+            "punch": {
+              "$ref": "#/$defs/punch"
+            },
+            "follow": {
+              "type": "boolean",
+              "description": "Ease the camera toward what each step acts on, alongside the step (and keep a caret in view while typing)."
+            }
+          },
+          "additionalProperties": false
+        },
+        "pace": {
+          "type": "number",
+          "description": "Overall playback speed, 0.25–3 (clamped)."
+        },
+        "intro": {
+          "type": "boolean"
+        },
+        "subtitles": {
+          "type": "boolean"
+        },
+        "endcard": {
+          "type": "boolean"
+        },
+        "cursor": {
+          "type": "boolean",
+          "description": "false hides the pointer (touch-first films)."
+        },
+        "backdrop": {
+          "$ref": "#/$defs/backdrop"
+        }
+      },
+      "additionalProperties": false
+    },
+    "screens": {
+      "type": "object",
+      "description": "The app screens, keyed by a short id used in step targets. Order = left to right (row) or stacking order.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/screen"
+      }
+    },
+    "chapters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/chapter"
+      }
+    },
+    "actors": {
+      "type": "object",
+      "description": "Characters that carry the story between scenes, keyed by id.",
+      "additionalProperties": {
+        "$ref": "#/$defs/actor"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "color": {
+      "type": "string",
+      "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"
+    },
+    "app": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 4,
+          "description": "Monogram, e.g. 'SA'."
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "string",
+      "description": "A screen id, or 'screen.part:name' such as 'crm.field:Stage', 'flow.node:trigger', 'books.row:1042'.",
+      "pattern": "^[A-Za-z_][\\w-]*(\\.[a-z]+:.+)?$"
+    },
+    "screenId": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][\\w-]*$"
+    },
+    "direction": {
+      "enum": [
+        "left",
+        "right",
+        "top",
+        "bottom",
+        "fade",
+        "zoom",
+        "pop",
+        "drop",
+        "launch",
+        "minimize",
+        "flip"
+      ]
+    },
+    "rect": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "screen": {
+      "type": "object",
+      "required": [
+        "surface",
+        "app"
+      ],
+      "properties": {
+        "surface": {
+          "enum": [
+            "crm-record",
+            "flow-canvas",
+            "team-chat",
+            "ai-chat",
+            "browser-app",
+            "phone"
+          ]
+        },
+        "app": {
+          "$ref": "#/$defs/app"
+        },
+        "mode": {
+          "enum": [
+            "light",
+            "dark"
+          ],
+          "description": "This screen's colour mode, overriding design.mode."
+        },
+        "hidden": {
+          "type": "boolean",
+          "description": "Start off stage; bring it on with an 'enter' step."
+        },
+        "place": {
+          "description": "A slot name or an explicit rect in world units (1600×900).",
+          "oneOf": [
+            {
+              "enum": [
+                "left",
+                "center",
+                "right",
+                "wide-left",
+                "wide-right",
+                "full",
+                "pip",
+                "pip-left"
+              ]
+            },
+            {
+              "$ref": "#/$defs/rect"
+            }
+          ]
+        },
+        "width": {
+          "type": "number",
+          "minimum": 200,
+          "maximum": 1500
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "surface": {
+                "const": "crm-record"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "record"
+            ],
+            "properties": {
+              "record": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "fields"
+                ],
+                "properties": {
+                  "module": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "stages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "stageField": {
+                    "type": "string"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  },
+                  "options": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "buttons": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "activity": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "text"
+                      ],
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        },
+                        "time": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "surface": {
+                "const": "flow-canvas"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "nodes"
+            ],
+            "properties": {
+              "workflow": {
+                "type": "string"
+              },
+              "nodes": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/screenId"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "sub": {
+                      "type": "string"
+                    },
+                    "icon": {
+                      "type": "string",
+                      "maxLength": 4
+                    },
+                    "color": {
+                      "$ref": "#/$defs/color"
+                    },
+                    "app": {
+                      "type": "string"
+                    },
+                    "trigger": {
+                      "type": "boolean"
+                    },
+                    "params": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "surface": {
+                "const": "team-chat"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "channel"
+            ],
+            "properties": {
+              "workspace": {
+                "type": "string"
+              },
+              "channel": {
+                "type": "string"
+              },
+              "channels": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "members": {
+                "type": "number"
+              },
+              "history": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "from",
+                    "text"
+                  ],
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "time": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "surface": {
+                "const": "ai-chat"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "assistant": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "user": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "greeting": {
+                "type": "string"
+              },
+              "recents": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "connectors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/screenId"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "app": {
+                      "type": "string",
+                      "description": "A screen id to borrow its icon and colour."
+                    },
+                    "icon": {
+                      "type": "string",
+                      "maxLength": 4
+                    },
+                    "color": {
+                      "$ref": "#/$defs/color"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              },
+              "look": {
+                "enum": [
+                  "warm",
+                  "neutral"
+                ],
+                "description": "warm: a soft, serif assistant; neutral: a plain grey, sans-serif one."
+              },
+              "placeholder": {
+                "type": "string"
+              },
+              "files": {
+                "type": "array",
+                "description": "Files a prompt can pull in with '@id'; hovering a reference previews it.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/screenId"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": [
+                        "image",
+                        "doc",
+                        "pdf",
+                        "sheet"
+                      ]
+                    },
+                    "meta": {
+                      "type": "string"
+                    },
+                    "preview": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "lines": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "chart": {
+                          "type": "array",
+                          "minItems": 2,
+                          "maxItems": 12,
+                          "items": {
+                            "type": "number",
+                            "minimum": 0
+                          }
+                        },
+                        "rows": {
+                          "type": "array",
+                          "maxItems": 8,
+                          "items": {
+                            "type": "array",
+                            "maxItems": 5,
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "color": {
+                          "$ref": "#/$defs/color"
+                        }
+                      }
+                    },
+                    "src": {
+                      "type": "string",
+                      "description": "A real image for the preview: an https URL, a path in the clip's folder, or a data:image/… URL (PNG, JPEG, GIF, WebP, AVIF)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "surface": {
+                "const": "browser-app"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "columns",
+              "rows"
+            ],
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "tab": {
+                "type": "string"
+              },
+              "company": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "nav": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "active": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "label",
+                    "value"
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "tone": {
+                      "enum": [
+                        "ok",
+                        "warn",
+                        "danger",
+                        "info",
+                        "muted"
+                      ]
+                    }
+                  }
+                }
+              },
+              "columns": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "cells"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[\\w-]+$"
+                    },
+                    "cells": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      }
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "tone": {
+                      "enum": [
+                        "ok",
+                        "warn",
+                        "danger",
+                        "info",
+                        "muted"
+                      ]
+                    },
+                    "new": {
+                      "type": "boolean",
+                      "description": "Hidden until an 'add' step reveals it."
+                    },
+                    "detail": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "surface": {
+                "const": "phone"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "time": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "assistant": {
+                "type": "string",
+                "description": "The assistant's name (default Iris)."
+              },
+              "material": {
+                "enum": [
+                  "glass",
+                  "light",
+                  "dark"
+                ],
+                "description": "Cards in liquid glass, light, or dark."
+              },
+              "wallpaper": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/color"
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "items": {
+                      "$ref": "#/$defs/color"
+                    }
+                  }
+                ]
+              },
+              "corner": {
+                "type": "number",
+                "minimum": 24,
+                "maximum": 60,
+                "description": "Screen corner radius (px); the frame and the Screen Pool stay concentric with it."
+              },
+              "poolInset": {
+                "type": "number",
+                "minimum": 4,
+                "maximum": 16,
+                "description": "The expanded Screen Pool's gap from the top and sides (px)."
+              },
+              "glow": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 7,
+                "items": {
+                  "$ref": "#/$defs/color"
+                },
+                "description": "Colours of the assistant's edge light."
+              },
+              "notifications": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/notification"
+                }
+              },
+              "screen": {
+                "enum": [
+                  "lock",
+                  "list"
+                ],
+                "description": "The lock screen, or an app's settings-style list."
+              },
+              "list": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "sections"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "circles": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                      "$ref": "#/$defs/color"
+                    }
+                  },
+                  "sections": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "rows"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "rows": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 8,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "label"
+                            ],
+                            "properties": {
+                              "id": {
+                                "$ref": "#/$defs/screenId"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "icon": {
+                                "type": "string",
+                                "maxLength": 6
+                              },
+                              "color": {
+                                "$ref": "#/$defs/color"
+                              },
+                              "detail": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": "string"
+                              },
+                              "toggle": {
+                                "type": "boolean"
+                              },
+                              "chevron": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "chapter": {
+      "type": "object",
+      "required": [
+        "title",
+        "steps"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "narration": {
+          "type": "string",
+          "description": "The script line for this chapter, shown as the subtitle."
+        },
+        "focus": {
+          "$ref": "#/$defs/target",
+          "description": "Where the camera points: a screen id, a part, or 'all'."
+        },
+        "zoom": {
+          "type": "number"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        },
+        "duration": {
+          "$ref": "#/$defs/duration"
+        },
+        "ease": {
+          "$ref": "#/$defs/ease"
+        },
+        "async": {
+          "type": "boolean",
+          "description": "Start the steps while the camera is still moving."
+        },
+        "backdrop": {
+          "$ref": "#/$defs/backdrop"
+        }
+      },
+      "additionalProperties": false
+    },
+    "message": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "app": {
+          "type": "string",
+          "description": "A screen id; the message shows that app's name and icon."
+        },
+        "text": {
+          "type": "string",
+          "description": "Supports *bold*, `code`, and \\n."
+        },
+        "time": {
+          "type": "string"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "description": "Exactly one action per step.",
+      "properties": {
+        "on": {
+          "type": "string",
+          "description": "Screen id, when the action can't infer its screen."
+        },
+        "punch": {
+          "$ref": "#/$defs/punch"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "focus"
+          ],
+          "properties": {
+            "focus": {
+              "type": "string"
+            },
+            "zoom": {
+              "type": "number"
+            },
+            "duration": {
+              "$ref": "#/$defs/duration"
+            },
+            "ease": {
+              "$ref": "#/$defs/ease"
+            },
+            "async": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "required": [
+            "pan"
+          ],
+          "properties": {
+            "pan": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/target"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "duration": {
+              "$ref": "#/$defs/duration"
+            },
+            "ease": {
+              "$ref": "#/$defs/ease"
+            },
+            "async": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "required": [
+            "caption"
+          ],
+          "properties": {
+            "caption": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            "wait"
+          ],
+          "properties": {
+            "wait": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000
+            }
+          }
+        },
+        {
+          "required": [
+            "packet"
+          ],
+          "properties": {
+            "packet": {
+              "type": "object",
+              "required": [
+                "from",
+                "to"
+              ],
+              "properties": {
+                "from": {
+                  "$ref": "#/$defs/target"
+                },
+                "to": {
+                  "$ref": "#/$defs/target"
+                }
+              }
+            }
+          }
+        },
+        {
+          "required": [
+            "enter"
+          ],
+          "properties": {
+            "enter": {
+              "$ref": "#/$defs/screenId"
+            },
+            "from": {
+              "$ref": "#/$defs/direction"
+            },
+            "duration": {
+              "$ref": "#/$defs/duration"
+            },
+            "ease": {
+              "$ref": "#/$defs/ease"
+            }
+          }
+        },
+        {
+          "required": [
+            "exit"
+          ],
+          "properties": {
+            "exit": {
+              "$ref": "#/$defs/screenId"
+            },
+            "to": {
+              "$ref": "#/$defs/direction"
+            },
+            "duration": {
+              "$ref": "#/$defs/duration"
+            },
+            "ease": {
+              "$ref": "#/$defs/ease"
+            }
+          }
+        },
+        {
+          "required": [
+            "front"
+          ],
+          "properties": {
+            "front": {
+              "$ref": "#/$defs/screenId"
+            },
+            "dim": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "required": [
+            "choose",
+            "value"
+          ],
+          "properties": {
+            "choose": {
+              "$ref": "#/$defs/target"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            "type",
+            "text"
+          ],
+          "properties": {
+            "type": {
+              "$ref": "#/$defs/target"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            "click"
+          ],
+          "properties": {
+            "click": {
+              "$ref": "#/$defs/target"
+            }
+          }
+        },
+        {
+          "required": [
+            "toast"
+          ],
+          "properties": {
+            "toast": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            "run"
+          ],
+          "properties": {
+            "run": {
+              "$ref": "#/$defs/target"
+            },
+            "ms": {
+              "type": "number"
+            },
+            "output": {
+              "type": [
+                "object",
+                "array"
+              ]
+            },
+            "result": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            "open"
+          ],
+          "properties": {
+            "open": {
+              "$ref": "#/$defs/target"
+            }
+          }
+        },
+        {
+          "required": [
+            "expression",
+            "preview"
+          ],
+          "properties": {
+            "expression": {
+              "type": "string"
+            },
+            "preview": {
+              "type": "string"
+            },
+            "field": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            "message"
+          ],
+          "properties": {
+            "message": {
+              "$ref": "#/$defs/message"
+            }
+          }
+        },
+        {
+          "required": [
+            "react"
+          ],
+          "properties": {
+            "react": {
+              "type": "object",
+              "required": [
+                "emoji"
+              ],
+              "properties": {
+                "emoji": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 99
+                }
+              }
+            }
+          }
+        },
+        {
+          "required": [
+            "reply"
+          ],
+          "properties": {
+            "reply": {
+              "$ref": "#/$defs/message"
+            }
+          }
+        },
+        {
+          "required": [
+            "connect"
+          ],
+          "properties": {
+            "connect": {
+              "$ref": "#/$defs/target"
+            }
+          }
+        },
+        {
+          "required": [
+            "prompt"
+          ],
+          "properties": {
+            "prompt": {
+              "type": "string"
+            },
+            "draft": {
+              "type": "boolean",
+              "description": "Leave the message in the composer for a later 'send' step."
+            }
+          }
+        },
+        {
+          "required": [
+            "think"
+          ],
+          "properties": {
+            "think": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000
+            }
+          }
+        },
+        {
+          "required": [
+            "tool"
+          ],
+          "properties": {
+            "tool": {
+              "type": "string"
+            },
+            "connector": {
+              "type": "string"
+            },
+            "input": {
+              "type": "object"
+            },
+            "result": {
+              "type": "string"
+            },
+            "ms": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "required": [
+            "respond"
+          ],
+          "properties": {
+            "respond": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            "add"
+          ],
+          "properties": {
+            "add": {
+              "$ref": "#/$defs/target"
+            }
+          }
+        },
+        {
+          "required": [
+            "status",
+            "to"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/target"
+            },
+            "to": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "required": [
+            "select"
+          ],
+          "properties": {
+            "select": {
+              "$ref": "#/$defs/target"
+            }
+          }
+        },
+        {
+          "required": [
+            "send"
+          ],
+          "properties": {
+            "send": {
+              "const": true
+            }
+          }
+        },
+        {
+          "required": [
+            "hover"
+          ],
+          "properties": {
+            "hover": {
+              "$ref": "#/$defs/target",
+              "description": "A file reference, e.g. 'chat.file:q3'."
+            },
+            "zoom": {
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 2.5
+                }
+              ]
+            },
+            "ms": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000
+            }
+          }
+        },
+        {
+          "required": [
+            "spawn"
+          ],
+          "properties": {
+            "spawn": {
+              "$ref": "#/$defs/actorIds"
+            },
+            "at": {
+              "$ref": "#/$defs/spot"
+            },
+            "perch": {
+              "type": "boolean"
+            },
+            "offset": {
+              "$ref": "#/$defs/point"
+            },
+            "effect": {
+              "enum": [
+                "pop",
+                "drop",
+                "rise",
+                "fade"
+              ]
+            },
+            "stagger": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2000
+            },
+            "bounces": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "bounciness": {
+              "type": "number",
+              "description": "Each rebound's height as a share of the last, 0.1–0.8."
+            }
+          }
+        },
+        {
+          "required": [
+            "move",
+            "to"
+          ],
+          "properties": {
+            "move": {
+              "type": "string"
+            },
+            "to": {
+              "$ref": "#/$defs/spot"
+            },
+            "perch": {
+              "type": "boolean"
+            },
+            "offset": {
+              "$ref": "#/$defs/point"
+            },
+            "path": {
+              "enum": [
+                "hop",
+                "bounce",
+                "roll",
+                "slide",
+                "float"
+              ]
+            },
+            "height": {
+              "type": "number",
+              "minimum": 0
+            },
+            "bounces": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "bounciness": {
+              "type": "number",
+              "description": "Each rebound's height as a share of the last, 0.1–0.8."
+            },
+            "duration": {
+              "$ref": "#/$defs/duration"
+            },
+            "ease": {
+              "$ref": "#/$defs/ease"
+            },
+            "async": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "required": [
+            "leave"
+          ],
+          "properties": {
+            "leave": {
+              "$ref": "#/$defs/actorIds"
+            },
+            "effect": {
+              "enum": [
+                "pop",
+                "fall",
+                "shrink",
+                "fade"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "confetti"
+          ],
+          "properties": {
+            "confetti": {
+              "$ref": "#/$defs/spot"
+            },
+            "count": {
+              "type": "number"
+            },
+            "power": {
+              "type": "number"
+            },
+            "colors": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/color"
+              }
+            }
+          }
+        },
+        {
+          "required": [
+            "backdrop"
+          ],
+          "properties": {
+            "backdrop": {
+              "$ref": "#/$defs/backdrop"
+            }
+          }
+        },
+        {
+          "required": [
+            "notify"
+          ],
+          "properties": {
+            "notify": {
+              "$ref": "#/$defs/notification"
+            }
+          }
+        },
+        {
+          "required": [
+            "ask"
+          ],
+          "properties": {
+            "ask": {
+              "type": "string"
+            },
+            "ms": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "required": [
+            "summarize"
+          ],
+          "properties": {
+            "summarize": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "ms": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "required": [
+            "pool"
+          ],
+          "properties": {
+            "pool": {
+              "enum": [
+                "idle",
+                "music",
+                "iris"
+              ]
+            },
+            "title": {
+              "type": "string"
+            },
+            "artist": {
+              "type": "string"
+            },
+            "art": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "items": {
+                "$ref": "#/$defs/color"
+              }
+            },
+            "expand": {
+              "type": "boolean"
+            },
+            "ms": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "required": [
+            "dive"
+          ],
+          "properties": {
+            "dive": {
+              "$ref": "#/$defs/target",
+              "description": "Zoom through a screen, part, or actor until it fills the frame."
+            },
+            "into": {
+              "$ref": "#/$defs/backdrop",
+              "description": "The backdrop behind it for the next scene."
+            },
+            "duration": {
+              "$ref": "#/$defs/duration"
+            },
+            "ease": {
+              "$ref": "#/$defs/ease"
+            }
+          }
+        },
+        {
+          "required": [
+            "blur"
+          ],
+          "properties": {
+            "blur": {
+              "description": "Keep one screen or actor sharp and blur the rest; false clears it.",
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/target"
+                },
+                {
+                  "const": false
+                }
+              ]
+            },
+            "amount": {
+              "type": "number",
+              "description": "Blur radius in px, 1–24."
+            }
+          }
+        },
+        {
+          "required": [
+            "toggle"
+          ],
+          "properties": {
+            "toggle": {
+              "$ref": "#/$defs/target"
+            },
+            "on": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "required": [
+            "tap"
+          ],
+          "properties": {
+            "tap": {
+              "$ref": "#/$defs/target"
+            }
+          }
+        }
+      ]
+    },
+    "ease": {
+      "enum": [
+        "smooth",
+        "snappy",
+        "linear",
+        "gentle",
+        "spring"
+      ],
+      "description": "Easing curve for a move."
+    },
+    "duration": {
+      "type": "number",
+      "description": "Milliseconds, 100–6000 (clamped)."
+    },
+    "punch": {
+      "description": "Punch in on clicks: true, a zoom amount (1.05–2), or { amount, hold }. false turns it off for one step.",
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "number"
+            },
+            "hold": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "point": {
+      "type": "object",
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "description": "A point in world units (the world is 1600×900)."
+    },
+    "backdrop": {
+      "description": "A stage colour, or two for a gradient.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/color"
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/color"
+          }
+        }
+      ]
+    },
+    "spot": {
+      "description": "A target (a screen, part, or actor; with 'perch' it sits on top) or a world point.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/target"
+        },
+        {
+          "$ref": "#/$defs/point"
+        }
+      ]
+    },
+    "actorIds": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "description": "A character: a sphere, block, pill, or ring (or a group of them) that moves like an actor.",
+      "properties": {
+        "shape": {
+          "enum": [
+            "sphere",
+            "block",
+            "pill",
+            "ring"
+          ]
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "colors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/color"
+          },
+          "description": "One colour per piece of a group (they repeat)."
+        },
+        "size": {
+          "type": "number",
+          "description": "World units, 16–600."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 24,
+          "description": "Pieces in a group, laid out in a grid."
+        },
+        "columns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "gap": {
+          "type": "number",
+          "minimum": 0
+        },
+        "label": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "at": {
+          "$ref": "#/$defs/point"
+        },
+        "squash": {
+          "type": "number",
+          "description": "How much it squashes and stretches, 0–2 (spheres default to 1, blocks 0.4)."
+        },
+        "finish": {
+          "enum": [
+            "gloss",
+            "matte",
+            "glass"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "notification": {
+      "type": "object",
+      "required": [
+        "app",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/screenId"
+        },
+        "app": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 6
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "time": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

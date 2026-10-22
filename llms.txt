@@ -1,40 +1,47 @@
-# ClipScript — authoring guide for AI agents
+# Cueflick — authoring guide for AI agents
 
 For any AI coding agent (Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, and others).
 
-ClipScript plays "product films" for software: video-like illustrations of a workflow
-moving across app screens. You write one JSON file (a clip script); the library plays it.
-You never write animation code, CSS, or HTML.
+Cueflick plays "product films" for software: video-like films of a workflow moving across
+app screens, with a directed camera and motion-graphics characters. You write one JSON file
+(a clip); the library plays it. You never write animation code, CSS, or HTML.
+
+Part 1 is the format. Part 2 is how to direct a good film. Part 3 is how to add a screen
+type when the app you need isn't built in.
 
 ## Your loop
 
-1. Read this guide. Run `npx clipscript catalog` to see templates, surfaces, parts, and actions.
-2. Write `<name>.clip.json`. Start from `npx clipscript init` if there is no clip yet.
-3. Run `npx clipscript validate <file>`. Fix every ✗ error. Each line gives a JSON path, the
+1. Read this guide. Run `npx cueflick catalog` to see templates, surfaces, parts, and actions.
+2. Write `<name>.clip.json`. Start from `npx cueflick init` if there is no clip yet.
+3. Run `npx cueflick validate <file>`. Fix every ✗ error. Each line gives a JSON path, the
    problem, and usually a hint ("Did you mean …?"). Treat ! warnings as likely mistakes too
-   (typos in keys, steps in the wrong order, acting on a screen that is off stage).
-4. Run `npx clipscript snapshot <file>`. Open every PNG and check: nothing cut off, text
-   readable, the action is in frame, the story makes sense chapter by chapter. Fix and repeat.
-5. Share it: `npx clipscript export <file>` (one self-contained .html) or
-   `npx clipscript render <file> --out film.mp4` (video), or embed with <clip-script src="...">.
+   (typos in keys, steps in the wrong order, acting on a screen or actor that is off stage).
+4. Run `npx cueflick snapshot <file>`. Open every PNG and check: nothing cut off, text
+   readable, the action in frame, the story clear chapter by chapter. Fix and repeat.
+5. Share it: `npx cueflick export <file>` (one self-contained .html) or
+   `npx cueflick render <file> --out film.mp4` (video), or embed with <cue-flick src="...">.
+
+# Part 1 — the format
 
 ## File anatomy
 
 {
-  "clipscript": "1",
+  "cueflick": "1",
   "title": "Short film title",
-  "template": "trigger-automation-notify" | "assistant-connector",
+  "template": "assistant-files" | "phone-feature" | "assistant-connector" | "trigger-automation-notify",
   "layout": "row" | "stage" | "desktop",        (optional; the template has a default)
   "disclaimer": "Illustration · names and records are made up",
   "story":   { "overview", "description", "audience", "workflow": [ ... ] },
-  "design":  { "mode", "aspect", "accent", "font", "radius", "camera", "pace" },
+  "design":  { "mode", "aspect", "accent", "font", "radius", "camera", "pace", "cursor", "backdrop" },
   "screens": { "<id>": { "surface": "...", "app": { "name", "color", "icon" }, ... } },
-  "chapters": [ { "title", "narration", "focus", "zoom", "steps": [ ... ] } ]
+  "actors":  { "<id>": { "shape": "sphere", "color": "#ffc83d", ... } },          (optional)
+  "chapters": [ { "title", "narration", "focus", "zoom", "duration", "ease", "async", "backdrop", "steps": [ ... ] } ]
 }
 
 - story.overview (required): one or two sentences — what happens and why it matters.
 - story.workflow: the process as plain sentences; shown on the end card.
 - chapters[].narration: the script line for that chapter, shown as the subtitle. One sentence.
+- chapters[].backdrop: the stage colour for this scene ("#hex", or ["#top", "#bottom"]).
 
 ## Screens: placement and visibility
 
@@ -50,85 +57,222 @@ desktop = overlapping windows (use front to raise one and dim the rest).
 
 ## Targets
 
-A target is a screen id ("crm") or "screen.part:name":
-  crm.field:Stage   crm.button:Save   flow.node:trigger   claw.connector:fastbooks   books.row:1042
-Use "all" in focus to frame every on-stage screen (recap).
+A target is a screen id ("crm"), "screen.part:name", an actor id ("sunny"), or one piece of
+an actor group ("tiles.piece:2"):
+  crm.field:Stage   flow.node:trigger   chat.file:q3-chart   chat.area:composer   phone.row:sunny
+Use "all" in focus to frame everything on stage (screens and actors).
 
 ## Templates
 
-trigger-automation-notify (default layout: row)
-  A record changes in one app, an automation runs, a team is notified in chat.
-  Needs crm-record, flow-canvas, team-chat. Chapters: the change → the workflow runs →
-  (optional) look inside a node → the team hears → recap with "focus": "all".
+assistant-files (stage) — Someone asks an AI assistant about their own files, pulling them in
+  with "@" while typing; a hover previews each file; the reply cites its sources. Needs ai-chat
+  with "files". Chapters: type with @references → hover to check → send → read and answer → hover a cited source.
 
-assistant-connector (default layout: stage)
-  Someone asks an AI assistant to do a job; it calls a connector; the result appears in
-  another app. Needs ai-chat (plus the target app, often browser-app with "hidden": true).
+phone-feature (stage) — A phone feature told in a motion-graphics style: actors carry the story
+  between scenes, there's no pointer, and confetti finishes it. Needs phone. Chapters: hook with
+  actors → the problem on the phone → the feature (ask Iris / summarize / pool / a list) → the payoff as blocks → regroup and finish.
+
+assistant-connector (stage) — An AI assistant uses a connector to do a job in another app.
+  Needs ai-chat (plus the target app, often browser-app with "hidden": true).
   Chapters: connect → ask → tool calls + reply → { "enter": app } and show the result → recap.
+
+trigger-automation-notify (row) — A record changes in one app, an automation runs, a team is
+  notified in chat. Needs crm-record, flow-canvas, team-chat.
 
 ## Surfaces
 
+ai-chat (an AI assistant)
+  assistant?, model?, user?, title?, greeting?, placeholder?, recents[]?,
+  look?: "warm" (soft, serif, like Claw) | "neutral" (plain grey, sans-serif, like GossipT)
+  connectors?: [ { id, name, app? (screen id), icon?, color?, enabled? } ]
+  files?: [ { id, name, kind?: image|doc|pdf|sheet, meta?, src?, preview? } ]
+    src: a real image (https URL, a path in the clip's folder, or data:image/...); otherwise
+    preview draws one: { title?, chart?: [numbers], lines?: [text], rows?: [[cells]], color? }
+  parts: connector, file, area (composer | thread | sidebar)
+  steps: { "connect": "chat.connector:books" }
+         { "prompt": "Does @q3-chart back up @board-memo?", "draft": true }   "@id" pulls a file in; draft leaves it unsent
+         { "send": true }
+         { "hover": "chat.file:q3-chart", "zoom": true, "ms": 1500 }   pops the preview up; zoom moves the camera in
+         { "think": 1200 }
+         { "tool": "read_file", "connector": "books", "input": { ... }, "result": "...", "ms": 900 }
+         { "respond": "Mostly, yes. @q3-chart shows *21%* growth.\n- a bullet" }
+
+phone (a frameless phone: lock screen or an app list)
+  time?, date?, assistant? ("Iris"), material?: glass | light | dark, wallpaper?: [1–3 hex],
+  corner? (24–60 px), poolInset? (4–16 px), glow?: [2–7 hex], notifications?: [ ... ],
+  screen?: "lock" | "list", list?: { title, circles?: [hex], sections: [ { title?, rows: [
+      { id, label, icon?, color?, detail?, value?, toggle?: bool, chevron?: bool } ] } ] }
+  parts: note, row, area (pool | clock | notes | summary | ask | list)
+  steps: { "notify": { "id": "sam", "app": "Messages", "icon": "💬", "color": "#34c759", "title": "Sam", "text": "...", "time": "2m ago" } }
+         { "ask": "What did I miss?" }            the edge glows; the request is written out
+         { "summarize": "Sam moved dinner to 8…", "title": "4 notifications" }   folds the pile into one card
+         { "pool": "music", "title": "Night Drive", "artist": "Mira Sol", "art": ["#ff7a59", "#7b2ff7"], "expand": true }
+         { "pool": "iris" } (listening)   { "pool": "idle" }
+         { "toggle": "phone.row:summaries" }   { "tap": "phone.row:sunny" }   (list screens; a touch ripple, no pointer)
+  The Screen Pool's corners always follow the screen's: radius = corner − poolInset.
+
 crm-record
-  record: { title, fields{}, module?, type?, stages[]?, stageField? ("Stage"), options{}?, buttons[]? (first is primary), activity[]? }
+  record: { title, fields{}, module?, type?, stages[]?, stageField? ("Stage"), options{}?, buttons[]?, activity[]? }
   parts: field, button
-  steps: { "choose": "crm.field:Stage", "value": "Closed Won" }   value must be one of the options
-         { "type": "crm.field:Notes", "text": "..." }
-         { "click": "crm.button:Save" }   the primary button saves and logs activity
-         { "toast": "Opportunity saved" }
+  steps: { "choose": "crm.field:Stage", "value": "Closed Won" }   { "type": "crm.field:Notes", "text": "..." }
+         { "click": "crm.button:Save" }   { "toast": "Opportunity saved" }
 
 flow-canvas (a node-based automation editor)
   workflow?, nodes: [ { id, title, sub?, icon?, color?, app? (screen id), trigger?, params{}? } ]  2–6 nodes
   parts: node
   steps: { "run": "flow.node:trigger", "ms": 12, "output": { ... }, "result": "true" }   run nodes in order
-         { "open": "flow.node:format" }   shows input data and parameters
-         { "expression": "{{ $json.name }} closed", "preview": "Acme closed", "field": "Message" }   after open
+         { "open": "flow.node:format" }   { "expression": "{{ $json.name }} closed", "preview": "Acme closed", "field": "Message" }
 
 team-chat
   channel, channels[]?, workspace?, members?, history[]? ({ from, text, time? })
-  steps: { "message": { "app": "flow", "text": "🎉 *Bold* and `code`" } }   or { "from": "Maya Chen", ... }
-         { "react": { "emoji": "🎉", "count": 3 } }   needs a message first
+  steps: { "message": { "app": "flow", "text": "🎉 *Bold* and `code`" } }   { "react": { "emoji": "🎉", "count": 3 } }
          { "reply": { "from": "Maya Chen", "text": "Great work!" } }
-
-ai-chat (an AI assistant app with connectors)
-  assistant?, model?, user?, title?, greeting?, recents[]?,
-  connectors: [ { id, name, app? (screen id), icon?, color?, enabled? } ]
-  parts: connector
-  steps: { "connect": "claw.connector:fastbooks" }   opens the connectors menu, switches it on
-         { "prompt": "Create invoices for October's jobs." }
-         { "think": 1200 }
-         { "tool": "create_invoice", "connector": "fastbooks", "input": { ... }, "result": "Invoice 1042", "ms": 900 }
-         { "respond": "Done:\n- *1042* Acme Corp\n- *1043* Globex" }   "- " lines become bullets
 
 browser-app (a web app in a browser window: header, side nav, summary cards, a table)
   url?, tab?, company?, title?, nav[]?, active?, summary[]? ({ label, value, tone? }),
   columns[], rows: [ { id, cells[], status?, tone?, new?, detail{}? } ]   tone: ok | warn | danger | info | muted
   parts: row
-  steps: { "add": "books.row:1042" }   reveals a row marked "new": true
-         { "status": "books.row:1042", "to": "Paid" }
-         { "select": "books.row:1042" }   opens the row in a drawer
-         { "toast": "3 invoices sent" }
-
-Any screen
-  { "focus": "chat" }  { "focus": "flow.node:format", "zoom": 1.2 }  { "caption": "..." }  { "wait": 1200 }
-  { "packet": { "from": "crm", "to": "flow.node:trigger" } }
-  { "enter": "books", "from": "right" }   from: left | right | top | bottom | fade | zoom
-  { "exit": "claw", "to": "left" }
-  { "front": "books", "dim": true }      raise a screen; dim the others
+  steps: { "add": "books.row:1042" }   { "status": "books.row:1042", "to": "Paid" }   { "select": "books.row:1042" }   { "toast": "..." }
 
 When two screens support the same action (e.g. "toast"), add "on": "<screen id>".
+
+## Actors (characters)
+
+"actors": { "sunny": { "shape": "sphere", "color": "#ffc83d", "size": 120, "at": { "x": 690, "y": 400 } } }
+  shape: sphere | block | pill | ring · size: 16–600 world units · at: start point (world is 1600×900)
+  finish: gloss (default) | matte | glass · squash: 0–2 (how soft it is; spheres 1, blocks 0.4)
+  groups: count (1–24), columns, gap, colors: [per piece], labels: [per piece] — e.g. a row of labelled blocks
+Steps:
+  { "spawn": ["sunny", "coral"], "effect": "pop" | "drop" | "rise" | "fade", "stagger": 140, "at": <spot> }
+  { "move": "sunny", "to": <spot>, "path": "hop" | "bounce" | "roll" | "slide" | "float",
+    "perch": true, "offset": { "x": -88, "y": 0 }, "height": 200, "bounces": 2, "bounciness": 0.36,
+    "duration": 900, "ease": "spring", "async": true }
+  { "leave": "sunny", "effect": "pop" | "fall" | "shrink" | "fade" }
+  { "confetti": <spot>, "count": 140 }
+  <spot> = a target (with "perch": true it sits on top of it) or a world point { "x", "y" }.
+  hop arcs and squashes on landing; bounce rebounds ("bounces" times, each "bounciness" as high);
+  roll stays on the surface and turns as it goes; a new move on an actor takes over smoothly.
+
+## Camera and motion
+
+Chapter: "focus" (a target or "all"), "zoom", "duration" (ms), "ease", "async": true (steps start
+while the camera still moves). Design camera: { zoom: 1–2.5, speed: 0.25–3, ease, follow: true, punch }.
+  ease: smooth | snappy | linear | gentle | spring
+  follow: the camera eases toward what each step acts on, and keeps a caret in view while typing.
+  punch: true | 1.3 | { amount, hold }: a quick zoom toward each click (a step can say "punch": false).
+Steps for any film:
+  { "focus": "chat.area:composer", "zoom": 1.4, "duration": 900, "ease": "gentle", "async": true }
+  { "pan": "books.row:1042" } or { "pan": { "x": 300, "y": 0 } }
+  { "dive": "coral", "into": "#06352f" }   zoom through a target until it fills the frame (change scene behind it)
+  { "blur": "phone", "amount": 7 }         keep one screen or actor sharp, blur the rest; { "blur": false } clears
+  { "backdrop": "#ffffff" }                change the stage colour now
+  { "caption": "..." }  { "wait": 1200 }   { "packet": { "from": "crm", "to": "flow.node:trigger" } }
+  { "enter": "books", "from": "right" }    from: left | right | top | bottom | fade | zoom | pop | drop | launch | flip
+  { "exit": "claw", "to": "minimize" }      to: the same, plus minimize
+  { "front": "books", "dim": true }
 
 ## Design
 
 mode: dark | light | auto · aspect: auto | 16:9 | 4:5 | 1:1 (auto goes portrait on phones) ·
-accent: hex · font: { ui, mono } · radius: 0–24 · camera: { zoom: 1–2.5, speed: 0.25–3 } ·
-pace: 0.25–3 · intro / subtitles / endcard: booleans (default true).
+accent: hex · font: { ui, mono } · radius: 0–24 · camera (above) · pace: 0.25–3 ·
+cursor: false (touch-first films hide the pointer) · backdrop: "#hex" or ["#top", "#bottom"] ·
+intro / subtitles / endcard: booleans (default true).
 
-## Rules for good films
+# Part 2 — directing a good film
 
-- 3–6 chapters, 30–60 seconds, one idea per chapter.
-- Narration: one sentence, under 140 characters. Captions under 90.
-- Show data moving: packets in row layouts, enter/exit in stage layouts. End on a recap with focus "all".
+A film is a sequence of beats. A beat is one new thing the viewer notices. Aim for a beat every
+1.5–3 seconds, 3–6 chapters, 30–60 seconds in all.
+
+## Shape the story
+
+1. Hook (one chapter): something visual and simple before any UI — characters popping in, a
+   screen arriving. No explanation yet.
+2. The problem (one chapter): show the pain in the product: the pile of notifications, the
+   copy-paste, the long form.
+3. The feature (one or two chapters): the product doing the job, step by step, in its own UI.
+4. The payoff (one chapter): the result, made tangible — blocks with labels, a row marked
+   "Sent", a message to the team.
+5. Close: regroup, a recap ("focus": "all"), or confetti. The end card shows story.workflow.
+
+## Camera grammar
+
+- Open wide, push in for detail, pull back for context. One camera move per beat.
+- Frame the thing that changes, not the whole app: "chat.area:composer", "phone.area:pool".
+- Typing: follow on, zoom 1.3–1.6 on the composer. Hover previews: "zoom": true.
+- Clicks in a desktop app: punch for a screen-recording feel; skip it for calm, premium films.
+- Scene change through an object: end on a character or card, { "dive": "<it>", "into": "<next colour>" },
+  then start the next chapter with a focus that pulls back out.
+- Isolate one thing: { "blur": "<screen or actor>" } for a beat, then { "blur": false }.
+- Use "async": true so the camera arrives while the action starts; never make the viewer wait for it.
+
+## Characters
+
+- Give each one a meaning: a person, a notification, an item. Keep to 3–6.
+- Let them carry the viewer between scenes: end a scene with a character alone, start the next
+  around it; or dive through it.
+- Perch them on what matters (a card, a row, the top of a phone); roll them along an edge to lead the eye.
+- Bounce and squash read as "landed"; one or two bounces is plenty.
+- Regroup them at the end; that's the visual "it all comes together".
+
+## Mood → settings
+
+| Mood | Settings |
+|---|---|
+| Playful, consumer | ease spring · bounces 2–3, bounciness 0.45 · squash 1.3–1.6 · gloss · confetti 180+ |
+| Premium, calm | ease gentle · speed 0.8 · pace 0.9 · bounces 1 · squash 0.6 · glass · white or soft backdrops |
+| Productivity, crisp | ease snappy · follow + punch · async chapters · few or no characters |
+| Enterprise, serious | ease smooth · no bounces · matte · one consistent backdrop · no confetti |
+
+## Which template fits the idea
+
+| The idea | Template | Screens |
+|---|---|---|
+| An AI assistant working with your files | assistant-files | ai-chat (neutral look, files) |
+| An AI assistant acting in another app | assistant-connector | ai-chat + browser-app |
+| A phone or consumer feature, told with motion | phone-feature | phone + actors |
+| A record change that triggers automation and notifies a team | trigger-automation-notify | crm-record + flow-canvas + team-chat |
+| An app that isn't built in | register a new screen type (Part 3) | yours |
+
+## Before you finish
+
+- Every chapter's narration says what the viewer sees, in one sentence.
+- Snapshots: the subject of each chapter is in frame and readable; nothing important is cut off.
+- Every product, person, and number is invented, and the disclaimer says so. Never use real logos.
 - Show code and expressions in the product's real syntax (e.g. {{ $json.field }}).
-- Use made-up companies, people, and data, and say so in "disclaimer".
-- Prefer invented product names. Never use real logos.
 - Clip text is always displayed as text; HTML in a clip is shown literally, never run.
+
+# Part 3 — adding a screen type
+
+When the app you need isn't built in, register a surface before the film loads:
+
+  import { registerSurface, h } from 'cueflick';
+
+  registerSurface({
+    name: 'kanban',                          // used as "surface": "kanban"
+    summary: 'A kanban board: cards move between columns.',
+    width: 520,                              // default width in world units
+    keys: ['columns'],                       // screen keys it reads (others are warned about)
+    styles: '.kb-col { … }',                 // CSS, scoped to the film's shadow root
+    parts: { card: def => def.columns.flatMap(c => c.cards.map(card => card.id)) },
+    validate(def, path, report) { /* report.error(path, message, hint) / report.warn(...) */ },
+    render(def) {
+      const el = h('div', { class: 'cf-window kb' }, /* build with h(); text only */);
+      return { el, find: (part, name) => /* the element for "board.card:name" */ null };
+    },
+    actions: {
+      move: {
+        summary: 'Move a card to a column: { "move": "board.card:42", "to": "Done" }.',
+        part: 'card', keys: ['to'],
+        validate(step, def, path, report) {},
+        async run(view, step, ctx) {
+          // ctx.wait(ms), ctx.animate(ms, t => …), ctx.cursor.moveTo(el, ctx), ctx.cursor.click(ctx),
+          // ctx.camera.look(el, { zoom }) / ctx.camera.back() / ctx.camera.track(el), ctx.fast (skip animation)
+        }
+      }
+    }
+  });
+
+Rules: build DOM only with h() / s() (text only; no innerHTML, no event-handler attributes);
+every wait goes through ctx so pause, pace, and seeking work; handle ctx.fast by jumping to the
+end state. For complete examples, read browser-app.js (a small surface) and phone.js (parts, list
+rows, the touch ripple) in https://github.com/priyabratasahoo21/cueflick/tree/main/src/surfaces.

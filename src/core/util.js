@@ -73,3 +73,25 @@ export function nameColor(name) {
     for (const char of String(name)) hue = (hue * 31 + char.charCodeAt(0)) % 360;
     return `hsl(${hue} 55% 50%)`;
 }
+
+/** A small seeded random number generator (0 ≤ n < 1), so confetti and noise repeat exactly. */
+export function seeded(seed) {
+    let state = seed >>> 0;
+    return () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+/**
+ * An image a clip may show: an https URL, an embedded raster image
+ * (data:image/png;base64,…), or a path inside the clip's folder (no "..").
+ */
+export const isImageSource = value => typeof value === 'string' && (
+    /^https:\/\/[^\s"'<>]+$/i.test(value)
+    || /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,[A-Za-z0-9+/=]+$/i.test(value)
+    || (/^[\w ./-]+\.(?:png|jpe?g|gif|webp|avif)$/i.test(value) && !value.startsWith('/') && !value.split('/').includes('..'))
+);

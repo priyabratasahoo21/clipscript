@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { formatReport, validate } from '../dist/clipscript.mjs';
+import { formatReport, validate } from '../dist/cueflick.mjs';
 
 const example = JSON.parse(await readFile(new URL('../examples/closed-won/closed-won.clip.json', import.meta.url), 'utf8'));
 const clone = () => structuredClone(example);
@@ -206,4 +206,206 @@ test('field values that would render as [object Object] are rejected', () => {
     const result = validate(clip);
     assert.ok(paths(result).includes('screens.flow.nodes[2].params'));
     assert.ok(paths(result).includes('screens.flow.nodes[1].sub'));
+});
+
+// ---------- v0.3: camera timing, punch, follow, pan, effects ----------
+
+test('camera options, per-move timing, pan, and new effects validate cleanly', () => {
+    const clip = cloneClaw();
+    clip.design.camera = { zoom: 1.25, speed: 1, ease: 'snappy', punch: { amount: 1.3, hold: 800 }, follow: true };
+    clip.chapters[0].duration = 1200;
+    clip.chapters[0].ease = 'gentle';
+    clip.chapters[0].async = true;
+    clip.chapters[3].steps[0] = { enter: 'books', from: 'launch', duration: 900, ease: 'spring' };
+    clip.chapters[3].steps[1] = { exit: 'claw', to: 'minimize' };
+    clip.chapters[3].steps.push({ pan: 'books.row:1039', duration: 800 }, { pan: { x: -120 } }, { focus: 'books', async: true, ease: 'linear' });
+    clip.chapters[0].steps[0].punch = 1.5;
+    const result = validate(clip);
+    assert.equal(result.ok, true, formatReport(result));
+    assert.deepEqual(result.warnings, []);
+});
+
+test('easing names, durations, punch values, and pan offsets are checked with hints', () => {
+    const clip = cloneClaw();
+    clip.design.camera.ease = 'snapy';
+    clip.design.camera.punch = { amount: 'big' };
+    clip.chapters[3].steps[0].from = 'lanch';
+    clip.chapters[3].steps[0].ease = 'sprng';
+    clip.chapters[0].duration = 99999;
+    clip.chapters[3].steps.push({ pan: { x: 'left' } });
+    const result = validate(clip);
+    assert.match(result.errors.find(e => e.path === 'design.camera.ease').hint, /"snappy"/);
+    assert.ok(result.errors.some(e => e.path === 'design.camera.punch.amount'));
+    assert.match(result.errors.find(e => e.path === 'chapters[3].steps[0].from').hint, /"launch"/);
+    assert.match(result.errors.find(e => e.path === 'chapters[3].steps[0].ease').hint, /"spring"/);
+    assert.ok(result.warnings.some(w => w.path === 'chapters[0].duration'));
+    assert.ok(result.errors.some(e => e.path === `chapters[3].steps[${clip.chapters[3].steps.length - 1}].pan`));
+});
+
+// ---------- v0.3: @file references, hover previews, drafts ----------
+
+const gossipt = JSON.parse(await readFile(new URL('../examples/gossipt-files/gossipt-files.clip.json', import.meta.url), 'utf8'));
+const cloneGossipt = () => structuredClone(gossipt);
+
+test('the GossipT example is valid with no warnings', () => {
+    const result = validate(gossipt);
+    assert.equal(result.ok, true, formatReport(result));
+    assert.deepEqual(result.warnings, []);
+});
+
+test('an unknown @reference is an error that suggests the right file', () => {
+    const clip = cloneGossipt();
+    clip.chapters[0].steps[0].prompt = 'Does @q3-chrt back up @board-memo?';
+    clip.chapters[2].steps[3].respond = 'See @pipline.';
+    const result = validate(clip);
+    assert.match(result.errors.find(e => e.path === 'chapters[0].steps[0].prompt').hint, /q3-chart/);
+    assert.match(result.errors.find(e => e.path === 'chapters[2].steps[3].respond').hint, /pipeline/);
+});
+
+test('an "@" inside an email address is not a reference', () => {
+    const clip = cloneGossipt();
+    clip.chapters[0].steps[0].prompt = 'Email the summary to maya@example.com and cite @q3-chart and @board-memo.';
+    assert.equal(validate(clip).ok, true, formatReport(validate(clip)));
+});
+
+test('files are checked: kind, duplicate ids, preview shape, unknown keys', () => {
+    const clip = cloneGossipt();
+    const files = clip.screens.chat.files;
+    files[0].kind = 'imgae';
+    files[1].id = 'q3-chart';
+    files[2].preview.rows = [['a', 'b', 'c', 'd', 'e', 'f']];
+    files[0].preview.chart = [1];
+    files[0].thumb = 'x.png';
+    clip.screens.chat.look = 'chatgpt';
+    const result = validate(clip);
+    assert.match(result.errors.find(e => e.path === 'screens.chat.files[0].kind').hint, /"image"/);
+    assert.ok(paths(result).includes('screens.chat.files[1].id'));
+    assert.ok(paths(result).includes('screens.chat.files[2].preview.rows'));
+    assert.ok(paths(result).includes('screens.chat.files[0].preview.chart'));
+    assert.ok(paths(result).includes('screens.chat.look'));
+    assert.ok(result.warnings.some(w => w.path === 'screens.chat.files[0].thumb'));
+});
+
+test('hover and send are checked against what happened earlier in the film', () => {
+    const clip = cloneGossipt();
+    clip.chapters[0].steps[0].draft = false;
+    clip.chapters[1].steps.unshift({ hover: 'chat.file:pipeline', zoom: 3 });
+    const result = validate(clip);
+    assert.ok(result.warnings.some(w => w.path === 'chapters[1].steps[0]' && /@pipeline/.test(w.message)), 'hovering a file nobody mentioned yet warns');
+    assert.ok(result.warnings.some(w => w.path === 'chapters[1].steps[4]' && /draft/.test(w.message)), 'sending with no draft warns');
+    assert.ok(paths(result).includes('chapters[1].steps[0].zoom'));
+});
+
+test('a hover target must be a file of the screen', () => {
+    const clip = cloneGossipt();
+    clip.chapters[1].steps[0].hover = 'chat.file:q4-chart';
+    assert.match(validate(clip).errors.find(e => e.path === 'chapters[1].steps[0].hover').hint, /q3-chart/);
+});
+
+// ---------- v0.3: phone, actors, backdrops ----------
+
+const iris = JSON.parse(await readFile(new URL('../examples/iris-phone/iris-phone.clip.json', import.meta.url), 'utf8'));
+const cloneIris = () => structuredClone(iris);
+
+test('the Iris phone example is valid with no warnings', () => {
+    const result = validate(iris);
+    assert.equal(result.ok, true, formatReport(result));
+    assert.deepEqual(result.warnings, []);
+});
+
+test('actors are checked: shape, finish, count, id clashes, labels, squash', () => {
+    const clip = cloneIris();
+    clip.actors.sunny.shape = 'sphear';
+    clip.actors.coral.finish = 'glosy';
+    clip.actors.tiles.count = 40;
+    clip.actors.phone = { shape: 'sphere' };
+    clip.actors.sky.squash = 5;
+    clip.actors.mint.labels = ['a', 'b'];
+    const result = validate(clip);
+    assert.match(result.errors.find(e => e.path === 'actors.sunny.shape').hint, /"sphere"/);
+    assert.match(result.errors.find(e => e.path === 'actors.coral.finish').hint, /"gloss"/);
+    assert.ok(paths(result).includes('actors.tiles.count'));
+    assert.ok(paths(result).includes('actors.phone'), 'an actor may not share a screen id');
+    assert.ok(result.warnings.some(w => w.path === 'actors.sky.squash'));
+    assert.ok(result.warnings.some(w => w.path === 'actors.mint.labels'));
+});
+
+test('actor steps are checked with hints, and against what is on stage', () => {
+    const clip = cloneIris();
+    clip.chapters[0].steps.unshift({ move: 'violet', to: { x: 10, y: 10 }, path: 'bounse', bounces: 9 });
+    clip.chapters[0].steps.push({ spawn: 'sunnny' }, { leave: 'tiles' }, { move: 'sky' }, { confetti: 'nowhere' }, { backdrop: 'blue' });
+    clip.chapters[4].steps.push({ move: 'sunny', to: 'tiles.piece:9' });
+    const result = validate(clip);
+    const steps = 'chapters[0].steps';
+    assert.ok(result.warnings.some(w => w.path === `${steps}[0].move`), 'moving an actor before it spawns warns');
+    assert.match(result.errors.find(e => e.path === `${steps}[0].path`).hint, /"bounce"/);
+    assert.ok(paths(result).includes(`${steps}[0].bounces`));
+    assert.match(result.errors.find(e => e.path === `${steps}[4].spawn`).hint, /sunny/);
+    assert.ok(result.warnings.some(w => w.path === `${steps}[5].leave`), 'leaving before spawning warns');
+    assert.ok(paths(result).includes(`${steps}[6].to`), 'move needs a "to"');
+    assert.ok(paths(result).includes(`${steps}[7].confetti`));
+    assert.ok(paths(result).includes(`${steps}[8].backdrop`));
+    assert.ok(paths(result).includes(`chapters[4].steps[${clip.chapters[4].steps.length - 1}].to`), 'piece index out of range');
+});
+
+test('phone settings and steps are checked', () => {
+    const clip = cloneIris();
+    Object.assign(clip.screens.phone, { material: 'glas', corner: 90, poolInset: 2, glow: ['#fff'] });
+    clip.chapters[1].steps.push({ notify: { app: 'Mail' } }, { pool: 'musc' });
+    clip.chapters[2].steps.reverse();
+    const result = validate(clip);
+    assert.match(result.errors.find(e => e.path === 'screens.phone.material').hint, /"glass"/);
+    for (const key of ['corner', 'poolInset', 'glow']) assert.ok(paths(result).includes(`screens.phone.${key}`), key);
+    const last = clip.chapters[1].steps.length - 1;
+    assert.ok(paths(result).includes(`chapters[1].steps[${last - 1}].notify.text`));
+    assert.match(result.errors.find(e => e.path === `chapters[1].steps[${last}].pool`).hint, /"music"/);
+    assert.ok(result.warnings.some(w => w.path === 'chapters[2].steps[0]' && /ask/.test(w.message)), 'summarizing before anyone asks warns');
+});
+
+test('design takes cursor and a backdrop; chapters take a backdrop', () => {
+    const clip = cloneIris();
+    Object.assign(clip.design, { cursor: 'no', backdrop: ['#000', '#111', '#222'] });
+    clip.chapters[0].backdrop = 'navy';
+    const result = validate(clip);
+    for (const path of ['design.cursor', 'design.backdrop', 'chapters[0].backdrop']) assert.ok(paths(result).includes(path), path);
+});
+
+test('dive, blur, image sources, and the phone list are checked', () => {
+    const clip = cloneIris();
+    clip.chapters[0].steps.push({ dive: 'coral', into: 'teal' }, { blur: 'phone.area:pool' }, { blur: false, amount: 99 });
+    Object.assign(clip.screens.phone, { screen: 'lsit' });
+    const result = validate(clip);
+    const last = clip.chapters[0].steps.length - 1;
+    assert.ok(paths(result).includes(`chapters[0].steps[${last - 2}].into`), 'dive "into" must be a colour');
+    assert.ok(paths(result).includes(`chapters[0].steps[${last - 1}].blur`), 'blur keeps whole screens, not parts');
+    assert.ok(result.warnings.some(w => w.path === `chapters[0].steps[${last}].amount`));
+    assert.match(result.errors.find(e => e.path === 'screens.phone.screen').hint, /"list"/);
+
+    const chat = cloneGossipt();
+    const files = chat.screens.chat.files;
+    files[0].src = 'media/q3.png';
+    files[1].src = 'https://example.com/memo.jpg';
+    files[2].src = 'data:image/png;base64,iVBORw0KGgo=';
+    assert.equal(validate(chat).ok, true, formatReport(validate(chat)));
+    for (const bad of ['../secret.png', '/etc/passwd.png', ['java', 'script:alert(1)'].join(''), 'http://example.com/a.png', 'data:image/svg+xml;base64,PHN2Zz4=', 'notes.txt']) {
+        files[0].src = bad;
+        assert.ok(paths(validate(chat)).includes('screens.chat.files[0].src'), `${bad} should be refused`);
+    }
+});
+
+test('a phone list needs rows with ids, and "toggle" needs a row with a switch', () => {
+    const clip = cloneIris();
+    Object.assign(clip.screens.phone, {
+        screen: 'list',
+        list: { title: 'Family', sections: [{ rows: [{ id: 'sunny', label: 'Sunny' }, { id: 'sunny', label: 'Again' }, { label: 'No id' }] }] }
+    });
+    clip.chapters[1].steps.push({ toggle: 'phone.row:sunny' }, { tap: 'phone.row:sunnny' });
+    const result = validate(clip);
+    const last = clip.chapters[1].steps.length - 1;
+    assert.ok(paths(result).includes('screens.phone.list.sections[0].rows[1].id'), 'duplicate row id');
+    assert.ok(paths(result).includes('screens.phone.list.sections[0].rows[2].id'), 'missing row id');
+    assert.ok(paths(result).includes(`chapters[1].steps[${last - 1}].toggle`), 'a row without a switch');
+    assert.match(result.errors.find(e => e.path === `chapters[1].steps[${last}].tap`).hint, /sunny/);
+    delete clip.screens.phone.list;
+    assert.ok(paths(validate(clip)).includes('screens.phone.list'), 'a list screen needs a list');
 });

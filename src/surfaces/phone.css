@@ -1,0 +1,725 @@
+/* phone surface: a frameless phone with a lock screen, the Screen Pool, and the assistant glow */
+
+.cf-phonewin,
+.cf-phonewin * {
+    box-sizing: border-box;
+}
+
+.cf-phonewin {
+    display: flex;
+    justify-content: center;
+    height: 100%;
+    font-family: var(--cf-font-ui);
+}
+
+.cf-phone {
+    position: relative;
+    height: 100%;
+    aspect-ratio: 390 / 844;
+    padding: 6px;
+    background: linear-gradient(145deg, #a3a3aa, #3d3d44 28%, #8d8d94 52%, #2f2f35 78%, #a8a8af);
+    /* the frame is the screen corner plus the 6px bezel, so they stay concentric */
+    border-radius: calc(var(--ph-corner) + 6px);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 50px 90px -30px rgb(0 0 0 / 0.55);
+    transition: box-shadow 500ms ease;
+}
+
+.cf-phone.cf-ph-iris {
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 50px 90px -30px rgb(0 0 0 / 0.55), 0 0 70px 8px rgb(186 120 255 / 0.5);
+}
+
+.cf-ph-screen {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    color: #fff;
+    background:
+        radial-gradient(120% 70% at 12% 8%, color-mix(in srgb, var(--wall-2) 88%, transparent), transparent 62%),
+        radial-gradient(90% 60% at 92% 44%, color-mix(in srgb, var(--wall-3) 82%, transparent), transparent 66%),
+        radial-gradient(120% 80% at 30% 104%, color-mix(in srgb, var(--wall-1) 85%, #000), transparent 72%),
+        linear-gradient(165deg, var(--wall-1), color-mix(in srgb, var(--wall-2) 55%, var(--wall-1)));
+    border-radius: var(--ph-corner);
+}
+
+/* dark material dims the wallpaper, as phones do at night */
+.cf-ph-mat-dark .cf-ph-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.38);
+}
+
+.cf-ph-status {
+    position: absolute;
+    top: 15px;
+    left: 28px;
+    right: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.cf-ph-status-icons {
+    fill: #fff;
+    stroke: #fff;
+}
+
+.cf-ph-clock {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    text-align: center;
+}
+
+.cf-ph-date {
+    font-size: 15px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.cf-ph-big {
+    color: rgb(255 255 255 / 0.9);
+    font-size: 84px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-shadow: 0 2px 20px rgb(0 0 0 / 0.12);
+}
+
+/* ---------- cards: liquid glass, light, dark ---------- */
+
+.cf-ph-glass {
+    position: relative;
+    background: linear-gradient(150deg, rgb(255 255 255 / 0.34), rgb(255 255 255 / 0.1) 55%, rgb(255 255 255 / 0.2));
+    border: 1px solid rgb(255 255 255 / 0.4);
+    box-shadow:
+        inset 0 1px 1px rgb(255 255 255 / 0.75),
+        inset 0 -1px 1px rgb(255 255 255 / 0.2),
+        inset 0 0 20px rgb(255 255 255 / 0.08),
+        0 14px 30px -14px rgb(0 0 0 / 0.4);
+    color: #fff;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+    -webkit-backdrop-filter: blur(16px) saturate(185%);
+    backdrop-filter: blur(16px) saturate(185%);
+}
+
+/* the bright edge light glass picks up from above */
+.cf-ph-glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(130% 70% at 18% -10%, rgb(255 255 255 / 0.32), transparent 55%);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.cf-ph-mat-light .cf-ph-glass {
+    background: rgb(246 246 248 / 0.88);
+    border-color: rgb(255 255 255 / 0.7);
+    box-shadow: 0 12px 28px -14px rgb(0 0 0 / 0.35);
+    color: #111114;
+    text-shadow: none;
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+}
+
+.cf-ph-mat-dark .cf-ph-glass {
+    background: rgb(30 30 33 / 0.82);
+    border-color: rgb(255 255 255 / 0.09);
+    box-shadow: 0 12px 28px -14px rgb(0 0 0 / 0.6);
+    color: #f2f2f7;
+    text-shadow: none;
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(140%);
+}
+
+.cf-ph-mat-light .cf-ph-glass::after,
+.cf-ph-mat-dark .cf-ph-glass::after {
+    display: none;
+}
+
+/* ---------- notifications and the summary ---------- */
+
+.cf-ph-notes {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 92px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.cf-ph-note {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 9px;
+    padding: 9px 11px 10px;
+    border-radius: 20px;
+    transition: transform 420ms cubic-bezier(0.3, 1.25, 0.5, 1), opacity 380ms ease;
+}
+
+.cf-ph-new {
+    animation: cf-ph-drop 640ms cubic-bezier(0.3, 1.45, 0.5, 1);
+}
+
+@keyframes cf-ph-drop {
+    from { opacity: 0; transform: translateY(-28px) scale(0.86); }
+}
+
+.cf-ph-note.cf-ph-folding {
+    opacity: 0;
+    transform: translateY(34px) scale(0.88);
+    transition: transform 480ms cubic-bezier(0.5, 0, 0.2, 1), opacity 420ms ease;
+}
+
+.cf-ph-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    background: var(--note);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 750;
+    text-shadow: none;
+}
+
+.cf-ph-note-head,
+.cf-ph-summary-head {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.cf-ph-note-head b {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.cf-ph-time {
+    margin-left: auto;
+    font-size: 11px;
+    opacity: 0.68;
+    white-space: nowrap;
+}
+
+.cf-ph-note-text {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 12.5px;
+    line-height: 1.3;
+    opacity: 0.94;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.cf-ph-summary {
+    padding: 11px 13px 12px;
+    border-radius: 22px;
+    animation: cf-ph-drop 640ms cubic-bezier(0.3, 1.45, 0.5, 1);
+}
+
+/* a colour that runs round the summary's edge */
+.cf-ph-summary::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    padding: 1.5px;
+    background: linear-gradient(90deg, var(--ph-glow)) 0 0 / 200% 100%;
+    border-radius: inherit;
+    animation: cf-ph-shimmer 2.4s linear infinite;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+@keyframes cf-ph-shimmer {
+    to { background-position: 200% 0; }
+}
+
+.cf-ph-spark {
+    background: linear-gradient(90deg, var(--ph-glow));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-size: 14px;
+    text-shadow: none;
+}
+
+.cf-ph-summary-text {
+    margin-top: 5px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.38;
+}
+
+/* ---------- the assistant: request bubble, orb, edge glow ---------- */
+
+.cf-ph-ask {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 23px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(14px) scale(0.95);
+    transition: opacity 300ms ease, transform 420ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.cf-ph-ask.cf-open {
+    opacity: 1;
+    transform: none;
+}
+
+.cf-ph-orb {
+    position: relative;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    overflow: hidden;
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgb(200 140 255 / 0.7);
+}
+
+.cf-ph-orb i {
+    position: absolute;
+    inset: 0;
+    background: conic-gradient(var(--ph-glow));
+    animation: cf-ph-spin 2.4s linear infinite;
+}
+
+.cf-ph-orb::after {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0.2) 70%);
+    border-radius: 50%;
+}
+
+@keyframes cf-ph-spin {
+    to { transform: rotate(1turn); }
+}
+
+.cf-ph-glow {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    overflow: hidden;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 500ms ease;
+    -webkit-mask-image: linear-gradient(to right, #000, transparent 28px, transparent calc(100% - 28px), #000), linear-gradient(to bottom, #000, transparent 28px, transparent calc(100% - 28px), #000);
+    mask-image: linear-gradient(to right, #000, transparent 28px, transparent calc(100% - 28px), #000), linear-gradient(to bottom, #000, transparent 28px, transparent calc(100% - 28px), #000);
+}
+
+.cf-ph-glow i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1000px;
+    height: 1000px;
+    margin: -500px 0 0 -500px;
+    background: conic-gradient(var(--ph-glow));
+    animation: cf-ph-spin 3.2s linear infinite;
+}
+
+.cf-ph-iris .cf-ph-glow {
+    opacity: 1;
+}
+
+.cf-ph-home {
+    position: absolute;
+    bottom: 9px;
+    left: 50%;
+    width: 118px;
+    height: 5px;
+    margin-left: -59px;
+    background: rgb(255 255 255 / 0.85);
+    border-radius: 3px;
+}
+
+/* ---------- the Screen Pool ---------- */
+
+.cf-ph-pool {
+    position: absolute;
+    top: calc(var(--ph-inset) + 2px);
+    left: 50%;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 96px;
+    height: 29px;
+    padding: 0 10px 0 4px;
+    overflow: hidden;
+    background: #000;
+    border-radius: 16px;
+    transform: translateX(-50%);
+    transition: width 560ms cubic-bezier(0.32, 1.32, 0.5, 1), height 560ms cubic-bezier(0.32, 1.32, 0.5, 1), border-radius 560ms ease, top 400ms ease, padding 400ms ease;
+}
+
+.cf-ph-pool > * {
+    opacity: 0;
+    transition: opacity 240ms ease 200ms;
+}
+
+.cf-pool-music,
+.cf-pool-iris {
+    width: 178px;
+}
+
+.cf-pool-music > *,
+.cf-pool-iris > * {
+    opacity: 1;
+}
+
+.cf-ph-pool:not(.cf-pool-expanded) .cf-ph-track,
+.cf-ph-pool:not(.cf-pool-expanded) .cf-ph-progress,
+.cf-ph-pool:not(.cf-pool-expanded) .cf-ph-controls {
+    display: none;
+}
+
+.cf-pool-iris:not(.cf-pool-expanded) {
+    grid-template-columns: 22px 1fr;
+}
+
+.cf-pool-iris .cf-ph-wave {
+    justify-self: end;
+}
+
+.cf-pool-expanded {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-rows: 48px auto auto;
+    row-gap: 12px;
+    /* inset the same distance from the top and both sides, with corners concentric with the screen's */
+    top: var(--ph-inset);
+    width: calc(100% - 2 * var(--ph-inset));
+    height: 160px;
+    padding: 16px 20px;
+    border-radius: calc(var(--ph-corner) - var(--ph-inset));
+}
+
+.cf-ph-art {
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, var(--art-1), var(--art-2));
+    border-radius: 6px;
+    box-shadow: inset 0 1px 1px rgb(255 255 255 / 0.4);
+    transition: width 500ms ease, height 500ms ease, border-radius 500ms ease;
+}
+
+.cf-pool-expanded .cf-ph-art {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+}
+
+.cf-ph-track {
+    display: grid;
+    min-width: 0;
+}
+
+.cf-ph-track b,
+.cf-ph-track span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.cf-ph-track b {
+    font-size: 14px;
+}
+
+.cf-ph-track span {
+    color: rgb(255 255 255 / 0.6);
+    font-size: 12px;
+}
+
+.cf-ph-wave {
+    display: flex;
+    align-items: center;
+    gap: 2.5px;
+    height: 16px;
+}
+
+.cf-ph-wave i {
+    width: 3px;
+    height: 100%;
+    background: var(--wave, #fff);
+    border-radius: 2px;
+    animation: cf-ph-wave 820ms ease-in-out infinite alternate;
+}
+
+.cf-ph-wave i:nth-child(2) { animation-delay: -200ms; }
+.cf-ph-wave i:nth-child(3) { animation-delay: -420ms; }
+.cf-ph-wave i:nth-child(4) { animation-delay: -120ms; }
+.cf-ph-wave i:nth-child(5) { animation-delay: -560ms; }
+
+@keyframes cf-ph-wave {
+    from { transform: scaleY(0.25); }
+}
+
+.cf-ph-progress {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-column: 1 / -1;
+    align-items: center;
+    gap: 9px;
+    color: rgb(255 255 255 / 0.55);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.cf-ph-progress i {
+    position: relative;
+    height: 4px;
+    background: rgb(255 255 255 / 0.22);
+    border-radius: 2px;
+}
+
+.cf-ph-progress b {
+    position: absolute;
+    inset: 0 68% 0 0;
+    background: #fff;
+    border-radius: 2px;
+}
+
+.cf-ph-controls {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    color: #fff;
+    font-size: 19px;
+}
+
+.cf-ph-pause {
+    display: inline-flex;
+    gap: 5px;
+}
+
+.cf-ph-pause i {
+    width: 5px;
+    height: 19px;
+    background: #fff;
+    border-radius: 1.5px;
+}
+
+/* ---------- an app screen: a settings-style list ---------- */
+
+.cf-ph-mat-light .cf-ph-on-list {
+    background: #f2f2f7;
+    color: #111114;
+}
+
+.cf-ph-mat-dark .cf-ph-on-list {
+    background: #000;
+}
+
+.cf-ph-mat-light .cf-ph-on-list .cf-ph-status-icons {
+    fill: #111114;
+    stroke: #111114;
+}
+
+.cf-ph-mat-light .cf-ph-on-list .cf-ph-home {
+    background: rgb(0 0 0 / 0.8);
+}
+
+.cf-ph-list {
+    position: absolute;
+    top: 46px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0 12px;
+    overflow: hidden;
+}
+
+.cf-ph-list-title {
+    margin: 6px 6px 10px;
+    font-size: 30px;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+}
+
+.cf-ph-circles {
+    display: flex;
+    margin: 0 6px 12px;
+}
+
+.cf-ph-circles i {
+    width: 38px;
+    height: 38px;
+    margin-right: -10px;
+    background: radial-gradient(circle at 34% 28%, color-mix(in oklch, var(--circle) 45%, #fff), var(--circle) 55%, color-mix(in oklch, var(--circle) 70%, #1d1450));
+    border: 2px solid rgb(255 255 255 / 0.85);
+    border-radius: 50%;
+}
+
+.cf-ph-section-title {
+    margin: 12px 14px 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.62;
+}
+
+.cf-ph-group {
+    overflow: hidden;
+    border-radius: 16px;
+}
+
+.cf-ph-mat-light .cf-ph-on-list .cf-ph-group {
+    background: #fff;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.cf-ph-mat-dark .cf-ph-on-list .cf-ph-group {
+    background: #1c1c1e;
+}
+
+.cf-ph-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    padding: 6px 12px;
+    transition: background 160ms ease;
+}
+
+.cf-ph-row + .cf-ph-row {
+    border-top: 1px solid rgb(255 255 255 / 0.18);
+}
+
+.cf-ph-mat-light .cf-ph-row + .cf-ph-row {
+    border-top-color: rgb(60 60 67 / 0.14);
+}
+
+.cf-ph-mat-dark .cf-ph-row + .cf-ph-row {
+    border-top-color: rgb(84 84 88 / 0.5);
+}
+
+.cf-ph-row.cf-pressed {
+    background: rgb(127 127 127 / 0.22);
+}
+
+.cf-ph-row-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+}
+
+.cf-ph-row-text {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 550;
+}
+
+.cf-ph-row-text span,
+.cf-ph-row-text small {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.cf-ph-row-text small {
+    font-size: 11.5px;
+    font-weight: 500;
+    opacity: 0.62;
+}
+
+.cf-ph-row-end {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+}
+
+.cf-ph-row-value {
+    opacity: 0.6;
+}
+
+.cf-ph-chevron {
+    font-size: 20px;
+    line-height: 1;
+    opacity: 0.4;
+}
+
+.cf-ph-toggle {
+    position: relative;
+    width: 46px;
+    height: 28px;
+    background: rgb(120 120 128 / 0.32);
+    border-radius: 999px;
+    transition: background 240ms ease;
+}
+
+.cf-ph-toggle i {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+    transition: transform 280ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.cf-ph-toggle.cf-on {
+    background: #34c759;
+}
+
+.cf-ph-toggle.cf-on i {
+    transform: translateX(18px);
+}
+
+/* banners land at the top over an app, not in the lock-screen stack */
+.cf-ph-on-list .cf-ph-notes {
+    top: 48px;
+    bottom: auto;
+    z-index: 3;
+}
+
+.cf-ph-touch {
+    position: absolute;
+    z-index: 6;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    background: rgb(255 255 255 / 0.55);
+    border: 1px solid rgb(0 0 0 / 0.08);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: cf-ph-touch 520ms ease-out forwards;
+}
+
+@keyframes cf-ph-touch {
+    from { opacity: 0.9; transform: scale(0.35); }
+    to { opacity: 0; transform: scale(1.4); }
+}

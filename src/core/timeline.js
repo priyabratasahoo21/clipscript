@@ -70,3 +70,28 @@ export class Timeline {
 }
 
 export const easeInOut = t => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+
+/** Named easing curves for camera moves and screen effects (t and the result run 0 → 1). */
+export const EASES = Object.freeze({
+    smooth: easeInOut,
+    snappy: t => 1 - (1 - t) ** 5,
+    linear: t => t,
+    gentle: t => -(Math.cos(Math.PI * t) - 1) / 2,
+    spring: t => {
+        const c = 1.7;
+        return 1 + (c + 1) * (t - 1) ** 3 + c * (t - 1) ** 2;
+    },
+    bounce: t => {
+        const n = 7.5625;
+        const d = 2.75;
+        if (t < 1 / d) return n * t * t;
+        if (t < 2 / d) return n * (t - 1.5 / d) ** 2 + 0.75;
+        if (t < 2.5 / d) return n * (t - 2.25 / d) ** 2 + 0.9375;
+        return n * (t - 2.625 / d) ** 2 + 0.984375;
+    }
+});
+
+/** Easing names authors can choose. */
+export const EASE_NAMES = ['smooth', 'snappy', 'linear', 'gentle', 'spring'];
+
+export const easeOf = name => EASES[name] ?? EASES.smooth;

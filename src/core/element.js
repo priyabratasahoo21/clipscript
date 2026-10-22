@@ -1,9 +1,9 @@
 /**
- * <clip-script> custom element: the easiest way to add a film to any page or
+ * <cue-flick> custom element: the easiest way to add a film to any page or
  * framework. Styles live in its shadow root, so they never leak either way.
  *
- *   <clip-script src="closed-won.clip.json"></clip-script>
- *   <clip-script><script type="application/json">{ ... }</script></clip-script>
+ *   <cue-flick src="closed-won.clip.json"></cue-flick>
+ *   <cue-flick><script type="application/json">{ ... }</script></cue-flick>
  *
  * Content with slot="poster" (e.g. an <img>) shows before the film loads and
  * when JavaScript is off.
@@ -30,8 +30,8 @@ function styleSheet() {
 }
 
 function errorPanel(errors, source) {
-    return h('div', { class: 'cs-error', role: 'alert' }, [
-        h('strong', { text: `ClipScript: ${source} can't be played` }),
+    return h('div', { class: 'cf-error', role: 'alert' }, [
+        h('strong', { text: `Cueflick: ${source} can't be played` }),
         h('ul', {}, errors.map(item => h('li', { text: `${item.path || '(root)'}: ${item.message}${item.hint ? ` ${item.hint}` : ''}` })))
     ]);
 }
@@ -39,15 +39,15 @@ function errorPanel(errors, source) {
 function parseChapter(value) {
     if (value === null || value === '') return null;
     if (/^\d+$/.test(value)) return Number(value);
-    console.warn(`clipscript: chapter="${value}" must be a whole number (0 is the first chapter); ignoring it.`);
+    console.warn(`cueflick: chapter="${value}" must be a whole number (0 is the first chapter); ignoring it.`);
     return null;
 }
 
-/** Define <clip-script> (or a custom tag name). Safe to call more than once. */
-export function defineElement(tagName = 'clip-script') {
+/** Define <cue-flick> (or a custom tag name). Safe to call more than once. */
+export function defineElement(tagName = 'cue-flick') {
     if (typeof customElements === 'undefined' || customElements.get(tagName)) return;
 
-    class ClipScriptElement extends HTMLElement {
+    class CueflickElement extends HTMLElement {
         static get observedAttributes() {
             return ['src', 'mode', 'chapter', 'autoplay', 'controls', 'endcard', 'reduced-motion'];
         }
@@ -139,7 +139,7 @@ export function defineElement(tagName = 'clip-script') {
             }
             const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
             shadow.adoptedStyleSheets = [styleSheet()];
-            const mount = h('div', { class: 'cs-mount' });
+            const mount = h('div', { class: 'cf-mount' });
             shadow.replaceChildren(mount);
             this.#player?.destroy();
             this.#player = null;
@@ -151,17 +151,17 @@ export function defineElement(tagName = 'clip-script') {
                 if (!result.ok) {
                     console.warn(formatReport(result, source));
                     mount.replaceChildren(errorPanel(result.errors, source));
-                    this.dispatchEvent(new CustomEvent('clipscript:error', { detail: { result }, bubbles: true, composed: true }));
+                    this.dispatchEvent(new CustomEvent('cueflick:error', { detail: { result }, bubbles: true, composed: true }));
                     return;
                 }
                 this.#player = new Player(this, mount, clip, this.#options());
             } catch (error) {
                 if (token !== this.#loadToken) return;
                 mount.replaceChildren(errorPanel([{ path: '', message: error.message }], source));
-                this.dispatchEvent(new CustomEvent('clipscript:error', { detail: { error }, bubbles: true, composed: true }));
+                this.dispatchEvent(new CustomEvent('cueflick:error', { detail: { error }, bubbles: true, composed: true }));
             }
         }
     }
 
-    customElements.define(tagName, ClipScriptElement);
+    customElements.define(tagName, CueflickElement);
 }

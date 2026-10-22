@@ -1,5 +1,5 @@
 /**
- * Safe DOM construction. Everything from a clip script is inserted as text,
+ * Safe DOM construction. Everything from a clip is inserted as text,
  * never parsed as HTML, so a clip can't inject markup or script.
  */
 
@@ -8,12 +8,15 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 // URL attributes may only point at http(s), relative paths, or fragments
 const URL_ATTRIBUTES = new Set(['href', 'src', 'xlink:href', 'action', 'formaction']);
 const SAFE_URL = /^(?:https?:|\/|\.{0,2}\/|#|[^:]*$)/i;
+// an <img> may also show an embedded raster image (never SVG, which can carry script elsewhere)
+const SAFE_IMAGE_DATA = /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,/i;
 
 function applyProps(el, props) {
     for (const [key, value] of Object.entries(props)) {
         if (value === undefined || value === null || value === false) continue;
         if (/^on/i.test(key)) throw new TypeError(`h(): event-handler attribute "${key}" is not allowed; use addEventListener.`);
-        if (URL_ATTRIBUTES.has(key.toLowerCase()) && !SAFE_URL.test(String(value).trim())) {
+        const url = String(value).trim();
+        if (URL_ATTRIBUTES.has(key.toLowerCase()) && !SAFE_URL.test(url) && !(key === 'src' && SAFE_IMAGE_DATA.test(url))) {
             throw new TypeError(`h(): unsafe URL in "${key}".`);
         }
         if (key === 'class') el.setAttribute('class', value);
