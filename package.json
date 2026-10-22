@@ -1,0 +1,92 @@
+{
+  "name": "clipscript",
+  "version": "0.2.0",
+  "description": "Product films for software, written as data. Describe a workflow across app screens in a JSON clip script and clipscript plays it as a video-like illustration, or renders it to video. Built for AI authors.",
+  "keywords": [
+    "product-film",
+    "demo",
+    "explainer",
+    "animation",
+    "web-component",
+    "custom-element",
+    "illustration",
+    "walkthrough",
+    "saas",
+    "ai",
+    "llm",
+    "claude",
+    "codex",
+    "mcp"
+  ],
+  "homepage": "https://github.com/priyabratasahoo21/clipscript#readme",
+  "bugs": {
+    "url": "https://github.com/priyabratasahoo21/clipscript/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/priyabratasahoo21/clipscript.git"
+  },
+  "license": "MIT",
+  "author": "Priyabrata Sahoo (https://github.com/priyabratasahoo21)",
+  "type": "module",
+  "main": "./dist/clipscript.mjs",
+  "module": "./dist/clipscript.mjs",
+  "types": "./index.d.ts",
+  "unpkg": "./dist/clipscript.min.js",
+  "jsdelivr": "./dist/clipscript.min.js",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./dist/clipscript.mjs",
+      "default": "./dist/clipscript.mjs"
+    },
+    "./standalone": "./dist/clipscript.min.js",
+    "./schema.json": "./schema/clipscript.schema.json",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "clipscript": "./bin/clipscript.mjs"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "cli",
+    "src",
+    "schema",
+    "examples",
+    "index.d.ts",
+    "llms.txt",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "lint": "eslint .",
+    "test": "node --test test/*.test.mjs",
+    "test:browser": "node --test test/browser/*.test.mjs",
+    "check": "npm run lint && npm run build && npm test && npm run test:browser",
+    "prepublishOnly": "npm run check",
+    "demo": "node bin/clipscript.mjs demo"
+  },
+  "peerDependencies": {
+    "playwright": ">=1.40"
+  },
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "ajv": "8.20.0",
+    "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "playwright": "1.59.0"
+  }
+}

@@ -1,0 +1,5 @@
+node_modules/
+out/
+*-snapshots/
+*.log
+.DS_Store

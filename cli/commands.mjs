@@ -1,0 +1,299 @@
+// clipscript CLI commands. Built on Node's standard library; Playwright is
+// loaded only by `snapshot` and `render`, and only if it is installed.
+
+import { spawn, spawnSync } from 'node:child_process';
+import { appendFile, copyFile, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, extname, join, resolve } from 'node:path';
+import { catalog, formatReport, GENERIC_ACTIONS, validate } from '../dist/clipscript.mjs';
+import { PACKAGE_ROOT, startPreviewServer, startStaticServer } from './server.mjs';
+
+const EXAMPLE = join(PACKAGE_ROOT, 'examples', 'closed-won', 'closed-won.clip.json');
+const GUIDE = join(PACKAGE_ROOT, 'llms.txt');
+const AI_MARKER = '<!-- clipscript -->';
+const READY_TIMEOUT_MS = 15000;
+
+export class CliError extends Error {}
+
+/** Parse an integer option, with a range check. */
+export function integerOption(value, name, { min, max, fallback }) {
+    if (value === undefined) return fallback;
+    if (!/^\d+$/.test(String(value))) throw new CliError(`--${name} must be a whole number, got "${value}".`);
+    const number = Number(value);
+    if (number < min || number > max) throw new CliError(`--${name} must be between ${min} and ${max}.`);
+    return number;
+}
+
+async function loadClip(file) {
+    if (!file) throw new CliError('Give a clip file, e.g. `clipscript validate my-film.clip.json`.');
+    let text;
+    try {
+        text = await readFile(file, 'utf8');
+    } catch (error) {
+        throw new CliError(`Can't read ${file}: ${error.code ?? error.message}`);
+    }
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        throw new CliError(`${file} isn't valid JSON: ${error.message}`);
+    }
+}
+
+async function loadValidClip(file) {
+    const clip = await loadClip(file);
+    const result = validate(clip);
+    if (!result.ok) throw new CliError(formatReport(result, basename(file)));
+    return clip;
+}
+
+async function loadPlaywright() {
+    try {
+        return await import('playwright');
+    } catch {
+        throw new CliError('This command needs Playwright: npm install --save-dev playwright && npx playwright install chromium');
+    }
+}
+
+const stem = file => basename(file).replace(/\.clip\.json$|\.json$/, '');
+const slug = text => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+/** Wait until the player has drawn the given static chapter and fonts are ready. */
+async function waitForReady(page, chapter) {
+    // runs inside the page
+    await page.waitForFunction(index => {
+        const film = globalThis.document.querySelector('clip-script');
+        if (film?.shadowRoot?.querySelector('.cs-error')) throw new Error('the clip failed to load');
+        return film?.player?.readyChapter === index;
+    }, chapter, { timeout: READY_TIMEOUT_MS });
+    await page.evaluate(() => globalThis.document.fonts.ready);
+    await page.evaluate(() => new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
+}
+
+// ---------- commands ----------
+
+export async function validateCommand(files, { json }) {
+    if (files.length === 0) throw new CliError('Give at least one clip file to validate.');
+    let failed = false;
+    const results = [];
+    for (const file of files) {
+        const result = validate(await loadClip(file));
+        failed ||= !result.ok;
+        results.push({ file, ...result });
+        if (!json) console.log(formatReport(result, file));
+    }
+    if (json) console.log(JSON.stringify(results, null, 2));
+    return failed ? 1 : 0;
+}
+
+export async function previewCommand([file], { port, offline }) {
+    await loadClip(file);
+    const server = await startPreviewServer(file, { port: integerOption(port, 'port', { min: 0, max: 65535, fallback: 4321 }), reload: true, offline });
+    console.log(`Previewing ${file} at ${server.url}  (reloads when the file changes; Ctrl+C to stop)`);
+    await new Promise(() => {});
+}
+
+export async function demoCommand(_args, { port }) {
+    const server = await startStaticServer(PACKAGE_ROOT, { port: integerOption(port, 'port', { min: 0, max: 65535, fallback: 4321 }) });
+    const examples = (await readdir(join(PACKAGE_ROOT, 'examples'), { withFileTypes: true })).filter(entry => entry.isDirectory());
+    console.log(`Demo running at ${server.url}/examples/  (Ctrl+C to stop)`);
+    for (const entry of examples) console.log(`  ${server.url}/examples/${entry.name}/`);
+    await new Promise(() => {});
+}
+
+export async function snapshotCommand([file], { out, width, mode, poster, offline }) {
+    const clip = await loadValidClip(file);
+    const { chromium } = await loadPlaywright();
+    const viewportWidth = integerOption(width, 'width', { min: 320, max: 3840, fallback: 1280 });
+    const dir = resolve(out ?? `${stem(file)}-snapshots`);
+    await mkdir(dir, { recursive: true });
+    const server = await startPreviewServer(file, { port: 0, reload: false, offline });
+    const browser = await chromium.launch();
+    try {
+        const page = await browser.newPage({ viewport: { width: viewportWidth, height: Math.round(viewportWidth * 9 / 16) + 160 } });
+        const errors = [];
+        page.on('pageerror', error => errors.push(error.message));
+        const shoot = async (params, path) => {
+            await page.goto(`${server.url}/?${new URLSearchParams({ bare: '1', controls: 'none', ...(mode ? { mode } : {}), ...params })}`);
+            await waitForReady(page, Number(params.chapter));
+            await page.locator('.cs-stage').screenshot({ path });
+            return path;
+        };
+        const saved = [];
+        for (let i = 0; i < clip.chapters.length; i++) {
+            saved.push(await shoot({ chapter: String(i) }, join(dir, `${String(i + 1).padStart(2, '0')}-${slug(clip.chapters[i].title)}.png`)));
+        }
+        if (poster) saved.push(await shoot({ chapter: String(clip.chapters.length - 1), endcard: 'none' }, resolve(poster)));
+        saved.forEach(path => console.log(path));
+        if (errors.length) {
+            console.error(`Page errors:\n${errors.join('\n')}`);
+            return 1;
+        }
+        return 0;
+    } finally {
+        await browser.close();
+        await server.close();
+    }
+}
+
+function hasFfmpeg() {
+    return spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' }).status === 0;
+}
+
+function ffmpeg(args) {
+    return new Promise((resolvePromise, reject) => {
+        const child = spawn('ffmpeg', ['-y', '-loglevel', 'error', ...args], { stdio: ['ignore', 'inherit', 'inherit'] });
+        child.on('error', reject);
+        child.on('close', code => (code === 0 ? resolvePromise() : reject(new CliError(`ffmpeg exited with code ${code}`))));
+    });
+}
+
+/** Move a file, falling back to copy + delete across volumes. */
+async function moveFile(from, to) {
+    try {
+        await rename(from, to);
+    } catch (error) {
+        if (error.code !== 'EXDEV') throw error;
+        await copyFile(from, to);
+        await rm(from, { force: true });
+    }
+}
+
+export async function renderCommand([file], { out, width, mode, offline }) {
+    const clip = await loadValidClip(file);
+    const target = resolve(out ?? `${stem(file)}.mp4`);
+    const format = extname(target).toLowerCase();
+    if (!['.webm', '.mp4', '.gif'].includes(format)) throw new CliError('--out must end in .webm, .mp4, or .gif');
+    if (format !== '.webm' && !hasFfmpeg()) throw new CliError(`${format} output needs ffmpeg on your PATH; use --out film.webm without it.`);
+    const { chromium } = await loadPlaywright();
+    const w = integerOption(width, 'width', { min: 320, max: 3840, fallback: 1280 });
+    const size = { width: w, height: Math.round(w * 9 / 16) };
+    const workDir = await mkdtemp(join(tmpdir(), 'clipscript-'));
+    const server = await startPreviewServer(file, { port: 0, reload: false, offline });
+    const browser = await chromium.launch();
+    try {
+        const context = await browser.newContext({ viewport: size, recordVideo: { dir: workDir, size } });
+        const page = await context.newPage();
+        const query = new URLSearchParams({ bare: '1', controls: 'none', ...(mode ? { mode } : {}) });
+        console.log(`Recording "${clip.title}" (${clip.chapters.length} chapters) in real time…`);
+        await page.goto(`${server.url}/?${query}`);
+        // runs inside the page
+        await page.evaluate(() => new Promise((done, fail) => {
+            const timer = setTimeout(() => fail(new Error('film did not finish within 10 minutes')), 600000);
+            globalThis.document.addEventListener('clipscript:ended', () => {
+                clearTimeout(timer);
+                done();
+            }, { once: true });
+        }));
+        await page.waitForTimeout(2500);
+        const video = page.video();
+        await context.close();
+        const webm = await video.path();
+        if (format === '.webm') await moveFile(webm, target);
+        else if (format === '.mp4') await ffmpeg(['-i', webm, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20', '-movflags', '+faststart', target]);
+        else await ffmpeg(['-i', webm, '-vf', `fps=12,scale=${Math.min(960, w)}:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse`, target]);
+        console.log(target);
+        return 0;
+    } finally {
+        await browser.close();
+        await server.close();
+        await rm(workDir, { recursive: true, force: true });
+    }
+}
+
+export async function initCommand([dir = '.'], { ai }) {
+    const base = resolve(dir);
+    await mkdir(base, { recursive: true });
+    const clipPath = join(base, 'film.clip.json');
+    if (existsSync(clipPath)) throw new CliError(`${clipPath} already exists; not overwriting it.`);
+    const clip = JSON.parse(await readFile(EXAMPLE, 'utf8'));
+    clip.$schema = 'https://unpkg.com/clipscript/schema/clipscript.schema.json';
+    await writeFile(clipPath, `${JSON.stringify(clip, null, 2)}\n`, { flag: 'wx' });
+    console.log(`Created ${clipPath}`);
+    if (ai) {
+        const block = `\n${AI_MARKER}\n## Product films (clipscript)\n\nTo make or edit a product film, read \`node_modules/clipscript/llms.txt\` first. Write clips as \`*.clip.json\`, then run \`npx clipscript validate <file>\` and fix every error, and \`npx clipscript snapshot <file>\` and look at each PNG before finishing.\n`;
+        for (const name of ['CLAUDE.md', 'AGENTS.md']) {
+            const path = join(base, name);
+            const current = existsSync(path) ? await readFile(path, 'utf8') : '';
+            if (current.includes(AI_MARKER)) {
+                console.log(`${name} already mentions clipscript`);
+                continue;
+            }
+            await appendFile(path, block);
+            console.log(`Added clipscript guidance to ${path}`);
+        }
+    }
+    console.log('Next: npx clipscript preview film.clip.json');
+    return 0;
+}
+
+export async function catalogCommand(_args, { json }) {
+    const info = catalog();
+    if (json) {
+        console.log(JSON.stringify({ ...info, genericActions: GENERIC_ACTIONS }, null, 2));
+        return 0;
+    }
+    for (const template of info.templates) console.log(`template  ${template.name}  — ${template.summary} (needs: ${template.requires.join(', ')})`);
+    for (const surface of info.surfaces) {
+        console.log(`\nsurface   ${surface.name}  — ${surface.summary}`);
+        if (surface.parts.length) console.log(`  parts:   ${surface.parts.join(', ')}`);
+        for (const action of surface.actions) console.log(`  ${action.name.padEnd(11)} ${action.summary}${action.keys.length ? ` [${action.keys.join(', ')}]` : ''}`);
+    }
+    console.log(`\ngeneric   ${GENERIC_ACTIONS.join(', ')}`);
+    return 0;
+}
+
+const escapeHtml = text => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Make text safe inside an inline <script>: it can't end the element or open an HTML comment. */
+const inlineScriptSafe = text => text.replace(/<\/(script)/gi, '<\\/$1').replace(/<!--/g, '<\\!--');
+
+/** A single self-contained HTML file: the player and the clip inlined, nothing else to host. */
+export async function exportCommand([file], { out, offline }) {
+    const clip = await loadValidClip(file);
+    const target = resolve(out ?? `${stem(file)}.html`);
+    if (extname(target).toLowerCase() !== '.html') throw new CliError('--out must end in .html');
+    const player = await readFile(join(PACKAGE_ROOT, 'dist', 'clipscript.min.js'), 'utf8');
+    // JSON with "<" escaped can't close the <script> element it sits in
+    const json = JSON.stringify(clip, null, 2).replace(/</g, '\\u003c');
+    const fonts = offline ? '' : '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">\n';
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(clip.title)}</title>
+<meta name="description" content="${escapeHtml(clip.story.overview)}">
+${fonts}<style>
+  body { margin: 0; background: #07080b; color: #e8ebf1; font-family: Inter, system-ui, sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 32px 20px 48px; }
+  h1 { margin: 0 0 6px; font-size: clamp(22px, 3.5vw, 34px); letter-spacing: -0.02em; }
+  p { margin: 0 0 24px; color: #9ba4b4; max-width: 760px; line-height: 1.55; }
+</style>
+<script>${inlineScriptSafe(player)}</script>
+</head>
+<body>
+<main>
+<h1>${escapeHtml(clip.title)}</h1>
+<p>${escapeHtml(clip.story.overview)}</p>
+<clip-script><script type="application/json">
+${json}
+</script></clip-script>
+</main>
+</body>
+</html>
+`;
+    try {
+        await writeFile(target, html, { flag: 'wx' });
+    } catch (error) {
+        if (error.code === 'EEXIST') throw new CliError(`${target} already exists; not overwriting it. Pass a different --out.`);
+        throw error;
+    }
+    console.log(target);
+    return 0;
+}
+
+export async function guideCommand() {
+    process.stdout.write(await readFile(GUIDE, 'utf8'));
+    return 0;
+}

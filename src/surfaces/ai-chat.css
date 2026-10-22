@@ -1,0 +1,444 @@
+/* ai-chat surface: an AI assistant app with connectors (warm, conversational look) */
+
+.cs-aichat {
+    --ai-bg: color-mix(in srgb, var(--cs-win) 90%, #efe3cf);
+    --ai-side: color-mix(in srgb, var(--cs-win-2) 82%, #e7dac3);
+    --ai-bubble: color-mix(in srgb, var(--cs-win-3) 72%, #e6dac6);
+    --ai-serif: "Tiempos Text", "Iowan Old Style", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+
+    background: var(--ai-bg);
+}
+
+.cs-aichat .cs-appbar {
+    background: var(--ai-bg);
+    box-shadow: none;
+}
+
+.cs-ai-main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.cs-ai-side {
+    display: flex;
+    flex-direction: column;
+    width: 176px;
+    flex-shrink: 0;
+    padding: 12px 10px;
+    background: var(--ai-side);
+    border-right: 1px solid var(--cs-line);
+    font-size: 13px;
+}
+
+.cs-ai-new {
+    padding: 8px 10px;
+    border: 1px solid var(--cs-line-strong);
+    border-radius: 9px;
+    background: var(--cs-win);
+    font-weight: 650;
+}
+
+.cs-ai-label {
+    margin: 16px 6px 6px;
+    color: var(--cs-dim);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.cs-ai-recent {
+    padding: 6px 8px;
+    overflow: hidden;
+    border-radius: 7px;
+    color: var(--cs-dim);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.cs-ai-recent.cs-active {
+    background: var(--ai-bubble);
+    color: var(--cs-text);
+    font-weight: 600;
+}
+
+.cs-ai-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
+    padding: 6px 4px 0;
+    font-weight: 600;
+}
+
+.cs-ai-user .cs-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 10px;
+}
+
+.cs-ai-pane {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.cs-ai-thread {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    padding: 20px 26px 12px;
+    overflow: hidden;
+}
+
+.cs-ai-thread:has(.cs-ai-msg, .cs-ai-tool) {
+    mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+}
+
+.cs-ai-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex: 1;
+    padding-bottom: 30px;
+}
+
+.cs-ai-empty .cs-appicon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 13px;
+}
+
+.cs-ai-greet {
+    font-family: var(--ai-serif);
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    text-align: center;
+}
+
+.cs-ai-user-msg {
+    align-self: flex-end;
+    max-width: 82%;
+    animation: cs-in 350ms ease;
+}
+
+.cs-ai-bubble {
+    padding: 10px 14px;
+    background: var(--ai-bubble);
+    border-radius: 14px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.cs-ai-thinking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--cs-dim);
+    font-size: 13.5px;
+    font-style: italic;
+}
+
+.cs-ai-spark {
+    color: var(--app);
+    font-style: normal;
+    animation: cs-ai-pulse 1s ease-in-out infinite;
+}
+
+@keyframes cs-ai-pulse {
+    50% { opacity: 0.35; transform: rotate(30deg); }
+}
+
+.cs-ai-tool {
+    padding: 9px 12px;
+    background: var(--cs-win);
+    border: 1px solid var(--cs-line);
+    border-radius: 10px;
+    font-size: 13px;
+    animation: cs-in 300ms ease;
+}
+
+.cs-ai-tool-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cs-ai-tool-head .cs-appicon,
+.cs-ai-chip .cs-appicon,
+.cs-ai-conn .cs-appicon {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    font-size: 8.5px;
+}
+
+.cs-ai-tool-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--cs-font-mono);
+    font-size: 12.5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.cs-ai-tool-name b {
+    font-family: var(--cs-font-ui);
+}
+
+.cs-ai-tool-status {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.cs-ai-tool.cs-running .cs-ai-tool-status {
+    border: 2px solid var(--cs-line-strong);
+    border-top-color: var(--app);
+    border-radius: 50%;
+    animation: cs-ai-spin 800ms linear infinite;
+}
+
+.cs-ai-tool.cs-ok .cs-ai-tool-status::before {
+    content: "✓";
+    color: var(--cs-ok);
+    font-weight: 800;
+}
+
+@keyframes cs-ai-spin {
+    to { transform: rotate(360deg); }
+}
+
+.cs-ai-tool-input {
+    margin-top: 5px;
+    overflow: hidden;
+    color: var(--cs-dim);
+    font-family: var(--cs-font-mono);
+    font-size: 11.5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.cs-ai-tool-result:empty {
+    display: none;
+}
+
+.cs-ai-tool-result {
+    margin-top: 5px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.cs-ai-reply {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 12px;
+    animation: cs-in 400ms ease;
+}
+
+.cs-ai-mark .cs-appicon {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 9px;
+}
+
+.cs-ai-prose {
+    font-family: var(--ai-serif);
+    font-size: 15.5px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.cs-ai-prose p {
+    margin: 0 0 8px;
+}
+
+.cs-ai-prose ul {
+    margin: 0 0 8px;
+    padding-left: 20px;
+}
+
+.cs-ai-prose li {
+    margin: 2px 0;
+}
+
+.cs-ai-prose code {
+    font-family: var(--cs-font-mono);
+    font-size: 0.85em;
+}
+
+.cs-ai-composer {
+    position: relative;
+    flex-shrink: 0;
+    margin: 6px 22px 18px;
+    padding: 12px 14px 10px;
+    background: var(--cs-win);
+    border: 1px solid var(--cs-line-strong);
+    border-radius: 18px;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.07);
+    transition: border-color 200ms ease;
+}
+
+.cs-ai-composer.cs-typing {
+    border-color: var(--app);
+}
+
+.cs-ai-input {
+    min-height: 40px;
+    font-size: 14.5px;
+    line-height: 1.45;
+}
+
+.cs-ai-placeholder {
+    color: var(--cs-faint);
+}
+
+.cs-ai-composer.cs-typing .cs-ai-placeholder,
+.cs-ai-typed:not(:empty) + .cs-ai-placeholder {
+    display: none;
+}
+
+.cs-ai-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 12.5px;
+}
+
+.cs-ai-plus {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--cs-line-strong);
+    border-radius: 50%;
+    color: var(--cs-dim);
+}
+
+.cs-ai-tools,
+.cs-ai-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border: 1px solid var(--cs-line-strong);
+    border-radius: 999px;
+    color: var(--cs-dim);
+    white-space: nowrap;
+}
+
+.cs-ai-chips {
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.cs-ai-chip {
+    padding: 3px 9px 3px 4px;
+    color: var(--cs-text);
+    font-weight: 600;
+}
+
+.cs-ai-model {
+    margin-left: auto;
+    color: var(--cs-dim);
+    white-space: nowrap;
+}
+
+.cs-ai-send {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: var(--app);
+    color: #fff;
+    font-weight: 800;
+}
+
+.cs-ai-menu {
+    position: absolute;
+    left: 12px;
+    bottom: calc(100% + 8px);
+    z-index: 5;
+    width: 270px;
+    padding: 8px;
+    background: var(--cs-win);
+    border: 1px solid var(--cs-line-strong);
+    border-radius: 12px;
+    box-shadow: var(--cs-shadow);
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.cs-ai-menu.cs-open {
+    opacity: 1;
+    transform: none;
+}
+
+.cs-ai-menu-label {
+    margin: 2px 6px 6px;
+    color: var(--cs-dim);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.cs-ai-conn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    font-size: 13.5px;
+}
+
+.cs-ai-conn-name {
+    flex: 1;
+}
+
+.cs-ai-conn .cs-switch {
+    position: relative;
+    width: 30px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--cs-line-strong);
+    transition: background 200ms ease;
+}
+
+.cs-ai-conn .cs-switch i {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 200ms ease;
+}
+
+.cs-ai-conn .cs-switch.cs-on {
+    background: var(--app);
+}
+
+.cs-ai-conn .cs-switch.cs-on i {
+    left: 14px;
+}

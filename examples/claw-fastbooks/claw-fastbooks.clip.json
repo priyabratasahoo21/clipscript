@@ -1,0 +1,128 @@
+{
+  "$schema": "../../schema/clipscript.schema.json",
+  "clipscript": "1",
+  "title": "Invoices sent from a chat",
+  "template": "assistant-connector",
+  "layout": "stage",
+  "disclaimer": "Illustration · Claw, Fastbooks, and all companies, people, and amounts are made up",
+
+  "story": {
+    "overview": "Jordan asks Claw to invoice October's completed jobs. Claw uses its Fastbooks connector to create and email three invoices, and they appear in Fastbooks Online.",
+    "description": "Small businesses lose hours each month turning finished jobs into invoices. This film shows an AI assistant doing it through a connector: one request in chat, each connector call the assistant makes, and the finished invoices waiting in the accounting app.",
+    "audience": "Small-business owners and bookkeepers",
+    "workflow": [
+      "Jordan turns on the Fastbooks connector in Claw",
+      "Jordan asks Claw to invoice October's completed jobs",
+      "Claw lists the completed jobs through the connector",
+      "Claw creates an invoice for each customer and emails them",
+      "The three invoices appear in Fastbooks Online, marked Sent"
+    ]
+  },
+
+  "design": {
+    "mode": "dark",
+    "accent": "#e07a5f",
+    "camera": { "zoom": 1.25, "speed": 1 },
+    "pace": 1
+  },
+
+  "screens": {
+    "claw": {
+      "surface": "ai-chat",
+      "mode": "light",
+      "app": { "name": "Claw", "color": "#c96a44", "icon": "Cw" },
+      "model": "Claw 5",
+      "user": "Jordan Lee",
+      "title": "Invoice October jobs",
+      "recents": ["Q3 expense summary", "Draft vendor follow-up", "Payroll checklist"],
+      "connectors": [
+        { "id": "fastbooks", "name": "Fastbooks", "app": "books" },
+        { "id": "drive", "name": "Cloud Drive", "icon": "CD", "color": "#5b8def", "enabled": true },
+        { "id": "mail", "name": "Mail", "icon": "M", "color": "#8b5cf6" }
+      ]
+    },
+    "books": {
+      "surface": "browser-app",
+      "mode": "dark",
+      "hidden": true,
+      "app": { "name": "Fastbooks", "color": "#22a447", "icon": "fb" },
+      "url": "app.fastbooks.example/app/invoices",
+      "company": "Northwind Services",
+      "nav": ["Dashboard", "Invoices", "Customers", "Expenses", "Reports", "Taxes"],
+      "active": "Invoices",
+      "title": "Invoices",
+      "summary": [
+        { "label": "Unpaid", "value": "$12,640", "tone": "info" },
+        { "label": "Overdue", "value": "$1,980", "tone": "danger" },
+        { "label": "Paid · last 30 days", "value": "$18,200", "tone": "ok" }
+      ],
+      "columns": ["No.", "Customer", "Date", "Due", "Amount", "Status"],
+      "rows": [
+        { "id": "1044", "new": true, "cells": ["1044", "Initech", "Oct 31", "Nov 30", "$1,200.00"], "status": "Sent",
+          "detail": { "Emailed to": "ap@initech.example" } },
+        { "id": "1043", "new": true, "cells": ["1043", "Globex", "Oct 31", "Nov 30", "$2,350.00"], "status": "Sent",
+          "detail": { "Emailed to": "billing@globex.example" } },
+        { "id": "1042", "new": true, "cells": ["1042", "Acme Corp", "Oct 31", "Nov 30", "$4,800.00"], "status": "Sent",
+          "detail": { "Emailed to": "billing@acme.example", "Terms": "Net 30" } },
+        { "id": "1041", "cells": ["1041", "Umbrella Co", "Oct 12", "Nov 11", "$3,150.00"], "status": "Due in 12 days" },
+        { "id": "1040", "cells": ["1040", "Hooli", "Sep 28", "Oct 28", "$1,980.00"], "status": "Overdue" },
+        { "id": "1039", "cells": ["1039", "Stark Labs", "Sep 15", "Oct 15", "$6,400.00"], "status": "Paid" }
+      ]
+    }
+  },
+
+  "chapters": [
+    {
+      "title": "Connect Fastbooks",
+      "narration": "Jordan connects Claw to Fastbooks in one click.",
+      "focus": "claw",
+      "steps": [
+        { "connect": "claw.connector:fastbooks" }
+      ]
+    },
+    {
+      "title": "Ask Claw",
+      "narration": "Then asks Claw to invoice the month's completed jobs.",
+      "focus": "claw",
+      "steps": [
+        { "prompt": "Create invoices for October's completed jobs and email them to each customer." },
+        { "think": 1400 }
+      ]
+    },
+    {
+      "title": "Claw uses the connector",
+      "narration": "Claw finds the jobs, creates three invoices, and sends them through Fastbooks.",
+      "focus": "claw",
+      "steps": [
+        { "tool": "list_completed_jobs", "connector": "fastbooks", "input": { "month": "2026-10" }, "result": "3 completed jobs · Acme Corp, Globex, Initech", "ms": 1100 },
+        { "tool": "create_invoice", "connector": "fastbooks", "input": { "customer": "Acme Corp", "amount": 4800 }, "result": "Invoice 1042 · $4,800.00", "ms": 900 },
+        { "tool": "create_invoice", "connector": "fastbooks", "input": { "customer": "Globex", "amount": 2350 }, "result": "Invoice 1043 · $2,350.00", "ms": 800 },
+        { "tool": "create_invoice", "connector": "fastbooks", "input": { "customer": "Initech", "amount": 1200 }, "result": "Invoice 1044 · $1,200.00", "ms": 800 },
+        { "tool": "send_invoices", "connector": "fastbooks", "input": { "invoices": [1042, 1043, 1044] }, "result": "3 invoices emailed", "ms": 900 },
+        { "respond": "Done. I created and emailed 3 invoices in Fastbooks:\n- *1042* · Acme Corp · $4,800.00\n- *1043* · Globex · $2,350.00\n- *1044* · Initech · $1,200.00\nTotal *$8,350.00*, due November 30." }
+      ]
+    },
+    {
+      "title": "In Fastbooks",
+      "narration": "In Fastbooks Online, the new invoices are already there, marked Sent.",
+      "focus": "books",
+      "steps": [
+        { "enter": "books", "from": "right" },
+        { "exit": "claw", "to": "left" },
+        { "add": "books.row:1042" },
+        { "add": "books.row:1043" },
+        { "add": "books.row:1044" },
+        { "toast": "3 invoices sent" },
+        { "select": "books.row:1042" }
+      ]
+    },
+    {
+      "title": "Recap",
+      "narration": "One request in Claw, three invoices in Fastbooks, no copy-paste.",
+      "focus": "all",
+      "steps": [
+        { "wait": 2400 }
+      ]
+    }
+  ]
+}

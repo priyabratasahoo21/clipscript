@@ -1,0 +1,136 @@
+{
+  "$schema": "../../schema/clipscript.schema.json",
+  "clipscript": "1",
+  "title": "Closed deal to team channel",
+  "template": "trigger-automation-notify",
+  "disclaimer": "Illustration · Sales Accelerator, n2N, Plank, and all people and records are made up",
+
+  "story": {
+    "overview": "When a rep marks a deal Closed Won in Sales Accelerator, an n2N workflow posts the win to the team's Plank channel within a second.",
+    "description": "Sales teams want to celebrate wins the moment they happen, without anyone copying details from the CRM into chat. This film follows one deal through the whole automation: the change in the CRM, each step of the n2N workflow, the message it builds, and the post the team sees in Plank.",
+    "audience": "Sales ops and RevOps teams building CRM automations",
+    "workflow": [
+      "A rep changes the opportunity stage to Closed Won and saves it",
+      "n2N's Sales Accelerator trigger receives the updated record",
+      "An IF step checks that the stage is Closed Won",
+      "A Set step builds the message from the record's fields",
+      "The Plank step posts the message to #sales-wins"
+    ]
+  },
+
+  "design": {
+    "mode": "dark",
+    "accent": "#22d3ee",
+    "font": { "ui": "Inter, system-ui, sans-serif", "mono": "JetBrains Mono, ui-monospace, monospace" },
+    "radius": 12,
+    "camera": { "zoom": 1.35, "speed": 1 },
+    "pace": 1
+  },
+
+  "screens": {
+    "crm": {
+      "surface": "crm-record",
+      "app": { "name": "Sales Accelerator", "color": "#4f7cff", "icon": "SA" },
+      "record": {
+        "module": "Opportunities",
+        "type": "Opportunity",
+        "title": "Acme Corp — Renewal",
+        "stages": ["Prospecting", "Proposal", "Negotiation", "Closed Won"],
+        "fields": {
+          "Account": "Acme Corp",
+          "Amount": "$48,000",
+          "Owner": "Jordan Lee",
+          "Close Date": "Oct 31, 2026",
+          "Stage": "Negotiation",
+          "Probability": "80%"
+        },
+        "buttons": ["Save", "Cancel"],
+        "activity": [
+          { "text": "Call with Acme procurement", "time": "Yesterday" },
+          { "text": "Stage changed to Negotiation", "time": "Oct 14" },
+          { "text": "Proposal sent to Acme Corp", "time": "Oct 9" }
+        ]
+      }
+    },
+    "flow": {
+      "surface": "flow-canvas",
+      "app": { "name": "n2N", "color": "#ff7a45", "icon": "n2N" },
+      "workflow": "Closed-won alerts",
+      "nodes": [
+        { "id": "trigger", "title": "Sales Accelerator Trigger", "sub": "Opportunity updated", "app": "crm" },
+        { "id": "check", "title": "IF", "sub": "Stage is Closed Won", "icon": "IF", "color": "#64748b" },
+        { "id": "format", "title": "Set", "sub": "Build message", "icon": "{ }", "color": "#8b5cf6",
+          "params": { "Mode": "Manual mapping", "Keep other fields": "Off" } },
+        { "id": "post", "title": "Plank", "sub": "Send to #sales-wins", "app": "chat" }
+      ]
+    },
+    "chat": {
+      "surface": "team-chat",
+      "app": { "name": "Plank", "color": "#2bb673", "icon": "P" },
+      "workspace": "Northwind Sales",
+      "channels": ["general", "sales-wins", "deals", "support"],
+      "channel": "sales-wins",
+      "members": 14,
+      "history": [
+        { "from": "Sam Ortiz", "text": "Q4 push starts Monday. Let's close strong! 🚀", "time": "9:12 AM" }
+      ]
+    }
+  },
+
+  "chapters": [
+    {
+      "title": "The deal closes",
+      "narration": "A rep marks the Acme Corp renewal as Closed Won in Sales Accelerator.",
+      "focus": "crm",
+      "steps": [
+        { "choose": "crm.field:Stage", "value": "Closed Won" },
+        { "click": "crm.button:Save" },
+        { "toast": "Opportunity saved" },
+        { "packet": { "from": "crm", "to": "flow.node:trigger" } }
+      ]
+    },
+    {
+      "title": "The workflow runs",
+      "narration": "n2N picks up the change and runs the Closed-won alerts workflow.",
+      "focus": "flow",
+      "steps": [
+        { "run": "flow.node:trigger", "ms": 12,
+          "output": { "id": "OPP-10482", "name": "Acme Corp — Renewal", "amount": 48000, "stage": "Closed Won", "owner": "Jordan Lee" } },
+        { "run": "flow.node:check", "ms": 3, "result": "true" },
+        { "run": "flow.node:format", "ms": 2 },
+        { "run": "flow.node:post", "ms": 140 }
+      ]
+    },
+    {
+      "title": "The message is built",
+      "narration": "A Set step turns the record's fields into the message the team will see.",
+      "focus": "flow",
+      "zoom": 1.1,
+      "steps": [
+        { "open": "flow.node:format" },
+        { "expression": "🎉 {{ $json.name }} closed for {{ $json.amount }} · Owner: {{ $json.owner }}",
+          "preview": "🎉 Acme Corp — Renewal closed for $48,000 · Owner: Jordan Lee" },
+        { "packet": { "from": "flow.node:post", "to": "chat" } }
+      ]
+    },
+    {
+      "title": "The team hears",
+      "narration": "Seconds later, the win lands in #sales-wins and the team celebrates.",
+      "focus": "chat",
+      "steps": [
+        { "message": { "app": "flow", "text": "🎉 *Acme Corp — Renewal* closed for *$48,000*\nOwner: Jordan Lee · Stage: Closed Won" } },
+        { "react": { "emoji": "🎉", "count": 3 } },
+        { "react": { "emoji": "🙌", "count": 2 } },
+        { "reply": { "from": "Maya Chen", "text": "Huge win, Jordan! 👏" } }
+      ]
+    },
+    {
+      "title": "Recap",
+      "narration": "Sales Accelerator to n2N to Plank in about a second, with no copy-paste.",
+      "focus": "all",
+      "steps": [
+        { "wait": 2600 }
+      ]
+    }
+  ]
+}

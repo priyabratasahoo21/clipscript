@@ -1,0 +1,132 @@
+# clipscript — authoring guide for AI agents
+
+clipscript plays "product films" for software: video-like illustrations of a workflow
+moving across app screens. You write one JSON file (a clip script); the library plays it.
+You never write animation code, CSS, or HTML.
+
+## Your loop
+
+1. Read this guide. Run `npx clipscript catalog` to see templates, surfaces, parts, and actions.
+2. Write `<name>.clip.json`. Start from `npx clipscript init` if there is no clip yet.
+3. Run `npx clipscript validate <file>`. Fix every ✗ error. Each line gives a JSON path, the
+   problem, and usually a hint ("Did you mean …?"). Treat ! warnings as likely mistakes too
+   (typos in keys, steps in the wrong order, acting on a screen that is off stage).
+4. Run `npx clipscript snapshot <file>`. Open every PNG and check: nothing cut off, text
+   readable, the action is in frame, the story makes sense chapter by chapter. Fix and repeat.
+5. Share it: `npx clipscript export <file>` (one self-contained .html) or
+   `npx clipscript render <file> --out film.mp4` (video), or embed with <clip-script src="...">.
+
+## File anatomy
+
+{
+  "clipscript": "1",
+  "title": "Short film title",
+  "template": "trigger-automation-notify" | "assistant-connector",
+  "layout": "row" | "stage" | "desktop",        (optional; the template has a default)
+  "disclaimer": "Illustration · names and records are made up",
+  "story":   { "overview", "description", "audience", "workflow": [ ... ] },
+  "design":  { "mode", "aspect", "accent", "font", "radius", "camera", "pace" },
+  "screens": { "<id>": { "surface": "...", "app": { "name", "color", "icon" }, ... } },
+  "chapters": [ { "title", "narration", "focus", "zoom", "steps": [ ... ] } ]
+}
+
+- story.overview (required): one or two sentences — what happens and why it matters.
+- story.workflow: the process as plain sentences; shown on the end card.
+- chapters[].narration: the script line for that chapter, shown as the subtitle. One sentence.
+
+## Screens: placement and visibility
+
+Every screen also accepts:
+- "mode": "light" | "dark"   this screen's colours, whatever design.mode is (mix them freely)
+- "hidden": true             start off stage; bring it on with { "enter": "<id>" }
+- "place": a slot ("left", "center", "right", "wide-left", "wide-right", "full", "pip", "pip-left")
+           or { "x", "y", "w", "h" } in world units (the world is 1600×900)
+- "width": world units
+
+Layouts: row = side by side · stage = one large screen at a time (use enter/exit) ·
+desktop = overlapping windows (use front to raise one and dim the rest).
+
+## Targets
+
+A target is a screen id ("crm") or "screen.part:name":
+  crm.field:Stage   crm.button:Save   flow.node:trigger   claw.connector:fastbooks   books.row:1042
+Use "all" in focus to frame every on-stage screen (recap).
+
+## Templates
+
+trigger-automation-notify (default layout: row)
+  A record changes in one app, an automation runs, a team is notified in chat.
+  Needs crm-record, flow-canvas, team-chat. Chapters: the change → the workflow runs →
+  (optional) look inside a node → the team hears → recap with "focus": "all".
+
+assistant-connector (default layout: stage)
+  Someone asks an AI assistant to do a job; it calls a connector; the result appears in
+  another app. Needs ai-chat (plus the target app, often browser-app with "hidden": true).
+  Chapters: connect → ask → tool calls + reply → { "enter": app } and show the result → recap.
+
+## Surfaces
+
+crm-record
+  record: { title, fields{}, module?, type?, stages[]?, stageField? ("Stage"), options{}?, buttons[]? (first is primary), activity[]? }
+  parts: field, button
+  steps: { "choose": "crm.field:Stage", "value": "Closed Won" }   value must be one of the options
+         { "type": "crm.field:Notes", "text": "..." }
+         { "click": "crm.button:Save" }   the primary button saves and logs activity
+         { "toast": "Opportunity saved" }
+
+flow-canvas (a node-based automation editor)
+  workflow?, nodes: [ { id, title, sub?, icon?, color?, app? (screen id), trigger?, params{}? } ]  2–6 nodes
+  parts: node
+  steps: { "run": "flow.node:trigger", "ms": 12, "output": { ... }, "result": "true" }   run nodes in order
+         { "open": "flow.node:format" }   shows input data and parameters
+         { "expression": "{{ $json.name }} closed", "preview": "Acme closed", "field": "Message" }   after open
+
+team-chat
+  channel, channels[]?, workspace?, members?, history[]? ({ from, text, time? })
+  steps: { "message": { "app": "flow", "text": "🎉 *Bold* and `code`" } }   or { "from": "Maya Chen", ... }
+         { "react": { "emoji": "🎉", "count": 3 } }   needs a message first
+         { "reply": { "from": "Maya Chen", "text": "Great work!" } }
+
+ai-chat (an AI assistant app with connectors)
+  assistant?, model?, user?, title?, greeting?, recents[]?,
+  connectors: [ { id, name, app? (screen id), icon?, color?, enabled? } ]
+  parts: connector
+  steps: { "connect": "claw.connector:fastbooks" }   opens the connectors menu, switches it on
+         { "prompt": "Create invoices for October's jobs." }
+         { "think": 1200 }
+         { "tool": "create_invoice", "connector": "fastbooks", "input": { ... }, "result": "Invoice 1042", "ms": 900 }
+         { "respond": "Done:\n- *1042* Acme Corp\n- *1043* Globex" }   "- " lines become bullets
+
+browser-app (a web app in a browser window: header, side nav, summary cards, a table)
+  url?, tab?, company?, title?, nav[]?, active?, summary[]? ({ label, value, tone? }),
+  columns[], rows: [ { id, cells[], status?, tone?, new?, detail{}? } ]   tone: ok | warn | danger | info | muted
+  parts: row
+  steps: { "add": "books.row:1042" }   reveals a row marked "new": true
+         { "status": "books.row:1042", "to": "Paid" }
+         { "select": "books.row:1042" }   opens the row in a drawer
+         { "toast": "3 invoices sent" }
+
+Any screen
+  { "focus": "chat" }  { "focus": "flow.node:format", "zoom": 1.2 }  { "caption": "..." }  { "wait": 1200 }
+  { "packet": { "from": "crm", "to": "flow.node:trigger" } }
+  { "enter": "books", "from": "right" }   from: left | right | top | bottom | fade | zoom
+  { "exit": "claw", "to": "left" }
+  { "front": "books", "dim": true }      raise a screen; dim the others
+
+When two screens support the same action (e.g. "toast"), add "on": "<screen id>".
+
+## Design
+
+mode: dark | light | auto · aspect: auto | 16:9 | 4:5 | 1:1 (auto goes portrait on phones) ·
+accent: hex · font: { ui, mono } · radius: 0–24 · camera: { zoom: 1–2.5, speed: 0.25–3 } ·
+pace: 0.25–3 · intro / subtitles / endcard: booleans (default true).
+
+## Rules for good films
+
+- 3–6 chapters, 30–60 seconds, one idea per chapter.
+- Narration: one sentence, under 140 characters. Captions under 90.
+- Show data moving: packets in row layouts, enter/exit in stage layouts. End on a recap with focus "all".
+- Show code and expressions in the product's real syntax (e.g. {{ $json.field }}).
+- Use made-up companies, people, and data, and say so in "disclaimer".
+- Prefer invented product names. Never use real logos.
+- Clip text is always displayed as text; HTML in a clip is shown literally, never run.
