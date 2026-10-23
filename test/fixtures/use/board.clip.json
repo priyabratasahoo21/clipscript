@@ -1,0 +1,25 @@
+{
+  "cueflick": "1",
+  "title": "Shipped",
+  "template": "board-update",
+  "story": { "overview": "A card moves from Doing to Done." },
+  "design": { "intro": false, "endcard": false },
+  "screens": {
+    "board": {
+      "surface": "kanban",
+      "app": { "name": "Boardly", "color": "#4f7cff" },
+      "columns": [
+        { "name": "Doing", "cards": [{ "id": "42", "title": "Ship the release" }] },
+        { "name": "Done", "cards": [{ "id": "41", "title": "Write the docs" }] }
+      ]
+    }
+  },
+  "chapters": [
+    {
+      "title": "Ship it",
+      "narration": "The release card moves to Done.",
+      "focus": "board",
+      "steps": [{ "drag": "board.card:42", "to": "Done" }]
+    }
+  ]
+}

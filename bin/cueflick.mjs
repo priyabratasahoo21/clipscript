@@ -30,6 +30,9 @@ Usage
   cueflick demo                              serve the bundled examples
 
 Options
+  --use <file>      load your own screen types or templates first (a .js or .mjs module);
+                    repeat it, or separate files with commas (validate, preview, snapshot,
+                    render, export, catalog)
   --width <px>      snapshot/render width (default 1280)
   --mode <mode>     override design.mode: dark, light, or auto
   --offline         don't load web fonts in preview, snapshot, or render pages
@@ -60,6 +63,7 @@ async function main() {
             mode: { type: 'string' },
             poster: { type: 'string' },
             offline: { type: 'boolean' },
+            use: { type: 'string', multiple: true },
             help: { type: 'boolean', short: 'h' },
             version: { type: 'boolean', short: 'v' }
         }

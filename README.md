@@ -44,7 +44,7 @@ An AI assistant uses a connector to create and email three invoices, then the ac
   - a phone: lock screen, notifications, an assistant that summarizes, the Screen Pool, a settings list
   - a CRM record, a workflow editor, a team chat, and a web app with a table
 
-  Need another app? [Add a screen type](llms.txt).
+  Need another app? [Add a screen type](llms.txt), or ask your AI agent to. Every `cueflick` command can use it with `--use`.
 - **A directed camera:** framing, zoom, pan, follow-the-action, punch-in on clicks, and easing per move. It can also zoom *through* an object into the next scene, or blur everything but the subject.
 - **Characters:** spheres, blocks, pills, and rings that pop in, hop, bounce, roll, and land with a squash, in a glossy, matte, or glass finish. Plus confetti.
 - **Look:**

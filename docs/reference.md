@@ -173,7 +173,8 @@ cueflick catalog [--json]                  templates, surfaces, parts, and actio
 cueflick guide                             print the AI authoring guide
 cueflick demo                              serve the bundled examples
 
-Options: --width <px>, --mode dark|light|auto, --offline (no web fonts)
+Options: --use <file> (your own screen types or templates), --width <px>,
+--mode dark|light|auto, --offline (no web fonts)
 ```
 
 - Node 20 or newer.
@@ -184,7 +185,16 @@ Options: --width <px>, --mode dark|light|auto, --offline (no web fonts)
 
 ## Extending
 
-Add an app screen with `registerSurface({ name, render, parts, actions, styles, keys })`, or a story pattern with `registerTemplate({ name, layout, requires })`. Build screen DOM with the exported `h()` helper, which only sets text and rejects event-handler attributes and unsafe URLs. Actions get `ctx.wait`, `ctx.animate`, `ctx.cursor`, and `ctx.camera` (`look`, `back`, `track`). [The AI guide](../llms.txt) walks through a complete screen type, and [`src/surfaces/browser-app.js`](../src/surfaces/browser-app.js) is a small real one.
+Add an app screen with `registerSurface({ name, render, parts, actions, styles, keys })`, or a story pattern with `registerTemplate({ name, layout, requires })`. Build screen DOM with the exported `h()` helper, which only sets text and rejects event-handler attributes and unsafe URLs. Actions get `ctx.wait`, `ctx.animate`, `ctx.cursor`, and `ctx.camera` (`look`, `back`, `track`). An action can't reuse a built-in step's name (`focus`, `move`, `wait`, and so on). [The AI guide](../llms.txt) walks through a complete screen type, and [`src/surfaces/browser-app.js`](../src/surfaces/browser-app.js) is a small real one.
+
+Put a screen type in its own module, and every CLI command can use it with `--use`:
+
+```sh
+npx cueflick validate board.clip.json --use screens/kanban.mjs
+npx cueflick render board.clip.json --use screens/kanban.mjs,screens/board-template.mjs
+```
+
+The module either imports from `cueflick` and calls `registerSurface()`, or exports a default function that receives the API: `export default ({ registerSurface, h }) => { … }`. Code runs only when you name it with `--use`; a clip can't ask for it. `export` embeds each module in the HTML file, so keep a module to one file that imports only `cueflick`. On your own page, import the module after `cueflick` and before the film loads.
 
 ## Safety and accessibility
 

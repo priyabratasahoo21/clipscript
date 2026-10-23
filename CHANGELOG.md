@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1
+
+### Added
+- **`--use <file>`** on `validate`, `preview`, `snapshot`, `render`, `export`, and `catalog`: screen types and templates you make yourself work with every command. A module either imports from `cueflick` and registers them, or exports a default function that receives the API. `export` embeds the modules, so the HTML file still stands alone, and `preview` reloads when one changes. Code only runs when you name it; a clip can't ask for it.
+
+### Fixed
+- The guide's example screen type named its action `move`, which is a built-in step, so the example never worked. It's `drag` now, and registering an action with a built-in name throws.
+- An unknown screen type or template now suggests how to register it.
+- `render` stops at once, with the reason, if the clip or a `--use` module fails to load in the browser, instead of waiting 10 minutes.
+
 ## 0.3.0
 
 **Renamed:** the project is now **Cueflick**: package and CLI `cueflick`, element `<cue-flick>`, global `window.Cueflick`, events `cueflick:*`, and clips start with `"cueflick": "1"`.

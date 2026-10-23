@@ -3,6 +3,7 @@
  * Built-ins register themselves from src/index.js; apps can add their own.
  */
 
+import { GENERIC_ACTIONS } from './steps.js';
 import { LAYOUTS } from '../templates/layouts.js';
 
 const surfaces = new Map();
@@ -21,6 +22,9 @@ function assertName(kind, name) {
 export function registerSurface(definition) {
     assertName('Surface', definition?.name);
     if (typeof definition.render !== 'function') throw new TypeError(`Surface "${definition.name}" needs a render() function`);
+    // a step's built-in action wins, so an action with a built-in name could never run
+    const clash = Object.keys(definition.actions ?? {}).find(action => GENERIC_ACTIONS.includes(action));
+    if (clash) throw new TypeError(`Surface "${definition.name}": "${clash}" is a built-in step (${GENERIC_ACTIONS.join(', ')}); give the action another name`);
     surfaces.set(definition.name, { parts: {}, actions: {}, width: 460, ...definition });
 }
 
