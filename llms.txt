@@ -108,7 +108,7 @@ phone (a frameless phone: lock screen or an app list)
          { "summarize": "Sam moved dinner to 8…", "title": "4 notifications" }   folds the pile into one card
          { "pool": "music", "title": "Night Drive", "artist": "Mira Sol", "art": ["#ff7a59", "#7b2ff7"], "expand": true }
          { "pool": "iris" } (listening)   { "pool": "idle" }
-         { "toggle": "phone.row:summaries" }   { "tap": "phone.row:sunny" }   (list screens; a touch ripple, no pointer)
+         { "toggle": "phone.row:summaries" } ("to": false switches it off)   { "tap": "phone.row:sunny" }   (list screens; a touch ripple, no pointer)
   The Screen Pool's corners always follow the screen's: radius = corner − poolInset.
 
 crm-record

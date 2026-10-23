@@ -113,6 +113,7 @@ const rowIds = def => listRows(def).filter(row => typeof row.id === 'string').ma
 function validatePhone(def, path, report) {
     if (def.screen !== undefined && !SCREENS.includes(def.screen)) report.error(`${path}.screen`, `must be one of ${SCREENS.join(', ')}.`, suggest(def.screen, SCREENS));
     if (def.screen === 'list' && def.list === undefined) report.error(`${path}.list`, 'is required when "screen" is "list".');
+    if (def.list !== undefined && def.screen !== 'list') report.warn(`${path}.list`, 'only shows when "screen" is "list"; until then its rows can\'t be toggled or tapped.', 'Add "screen": "list".');
     if (def.list !== undefined) validateList(def.list, `${path}.list`, report);
     for (const key of ['time', 'date', 'assistant']) {
         if (def[key] !== undefined && typeof def[key] !== 'string') report.error(`${path}.${key}`, 'must be a string.');
@@ -354,21 +355,21 @@ export default {
     recap: view => view.iris(false),
     actions: {
         toggle: {
-            summary: 'Flip a switch in the list: { "toggle": "phone.row:summaries" } (add "on": false to switch it off).',
+            summary: 'Flip a switch in the list: { "toggle": "phone.row:summaries" } (add "to": false to switch it off).',
             part: 'row',
-            keys: ['on'],
+            keys: ['to'],
             follow: (view, step) => view.find('row', String(step.toggle).split(':').slice(1).join(':')),
             validate(step, def, path, report) {
                 const id = String(step.toggle).split(':').slice(1).join(':');
                 const row = listRows(def).find(item => item.id === id);
                 if (row && row.toggle === undefined) report.error(`${path}.toggle`, `row "${id}" has no switch; give it "toggle": false in the list.`);
-                if (step.on !== undefined && typeof step.on !== 'boolean') report.error(`${path}.on`, 'must be true or false.');
+                if (step.to !== undefined && typeof step.to !== 'boolean') report.error(`${path}.to`, 'must be true or false.');
             },
             async run(view, step, ctx) {
                 const toggle = view.find('row', ctx.name)?.querySelector('.cf-ph-toggle');
                 if (!toggle) return;
                 if (!ctx.fast) view.touch(toggle);
-                toggle.classList.toggle('cf-on', step.on !== false);
+                toggle.classList.toggle('cf-on', step.to !== false);
                 await ctx.wait(ctx.fast ? 0 : 700);
             }
         },

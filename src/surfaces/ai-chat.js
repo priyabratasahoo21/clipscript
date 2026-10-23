@@ -106,7 +106,7 @@ function validateChat(def, path, report, screens) {
     });
 }
 
-const connectorIds = def => (Array.isArray(def.connectors) ? def.connectors.map(c => c.id) : []);
+const connectorIds = def => (Array.isArray(def.connectors) ? def.connectors.filter(isObject).map(c => c.id) : []);
 const fileIds = def => (Array.isArray(def.files) ? def.files.filter(isObject).map(file => file.id) : []);
 const referencesIn = text => [...String(text).matchAll(REFERENCE)].map(match => match[2]);
 
@@ -178,13 +178,20 @@ function prose(text, files) {
     return wrapper;
 }
 
-function render(def, { screens }) {
+/** A relative image path sits in the clip's folder, so it resolves against the clip's URL (when the clip was fetched). */
+function located(file, base) {
+    if (!base || typeof file.src !== 'string' || /^(?:https:|data:)/i.test(file.src)) return file;
+    const url = new URL(file.src, base);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? { ...file, src: url.href } : file;
+}
+
+function render(def, { screens, base }) {
     const look = LOOKS.includes(def.look) ? def.look : 'warm';
     const assistant = def.assistant ?? def.app.name;
     const { el, body } = appWindow(def.app, { title: def.title ?? 'New chat', className: `cf-aichat cf-ai-${look}` });
     const connectors = Array.isArray(def.connectors) ? def.connectors : [];
     const enabled = new Set(connectors.filter(c => c.enabled).map(c => c.id));
-    const files = new Map((Array.isArray(def.files) ? def.files : []).filter(file => isObject(file) && typeof file.id === 'string').map(file => [file.id, file]));
+    const files = new Map((Array.isArray(def.files) ? def.files : []).filter(file => isObject(file) && typeof file.id === 'string').map(file => [file.id, located(file, base)]));
 
     const sidebar = h('div', { class: 'cf-ai-side' }, [
         h('div', { class: 'cf-ai-new', text: look === 'neutral' ? '✎  New chat' : '+ New chat' }),

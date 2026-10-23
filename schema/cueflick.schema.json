@@ -1718,8 +1718,9 @@
             "toggle": {
               "$ref": "#/$defs/target"
             },
-            "on": {
-              "type": "boolean"
+            "to": {
+              "type": "boolean",
+              "description": "The switch's new state; false switches it off (default true)."
             }
           }
         },

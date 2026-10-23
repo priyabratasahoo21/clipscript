@@ -22,7 +22,7 @@
   "design": {
     "mode": "dark",
     "accent": "#e07a5f",
-    "camera": { "zoom": 1.25, "speed": 1.1, "ease": "snappy", "follow": true, "punch": { "amount": 1.25, "hold": 700 } },
+    "camera": { "zoom": 1.25, "speed": 1.1, "ease": "snappy", "punch": { "amount": 1.25, "hold": 700 }, "follow": false },
     "pace": 1
   },
 

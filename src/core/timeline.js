@@ -39,7 +39,8 @@ export class Timeline {
                 reject(STOP);
                 return;
             }
-            const duration = Math.max(0, ms / pace);
+            // a duration that isn't a number (NaN) would never finish; treat it as instant
+            const duration = Number.isFinite(ms / pace) ? Math.max(0, ms / pace) : 0;
             if (fast || duration === 0) {
                 onFrame?.(1);
                 resolve();

@@ -88,9 +88,13 @@ export function jsonNodes(value) {
     return fragment;
 }
 
+/** True when an element is rendered (it, and every ancestor, has a box); a hidden one has no position to measure. */
+export const isShown = el => el.isConnected && el.getClientRects().length > 0;
+
 /**
  * Position of an element in the coordinates of `world` (unaffected by the
- * camera's CSS transform), corrected for scrolled containers.
+ * camera's CSS transform), corrected for scrolled containers. Measure only
+ * shown elements (see isShown): a hidden one reads as the world's corner.
  */
 export function rectIn(world, el) {
     let x = 0;

@@ -57,6 +57,7 @@ export function resolveStepScreen(step, action, screens) {
     const selected = selector && hasOwn(screens, selector.screen) && selector.part ? selector.screen : null;
 
     if (step.on !== undefined) {
+        if (typeof step.on !== 'string') return { error: '"on" names the screen this step runs on, so it must be a screen id.', path: 'on' };
         if (!hasOwn(screens, step.on)) return { error: `screen "${step.on}" is not defined.`, path: 'on', candidates: keys };
         if (!hasOwn(screens[step.on].surface.actions, action)) return { error: `"${action}" can't run on "${step.on}".`, path: 'on' };
         if (selected && selected !== step.on) {

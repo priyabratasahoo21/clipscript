@@ -240,7 +240,7 @@ export default {
     width: 620,
     keys: ['workflow', 'nodes'],
     parts: {
-        node: def => (Array.isArray(def.nodes) ? def.nodes.map(node => node.id) : [])
+        node: def => (Array.isArray(def.nodes) ? def.nodes.filter(isObject).map(node => node.id) : [])
     },
     validate: validateFlow,
     render,

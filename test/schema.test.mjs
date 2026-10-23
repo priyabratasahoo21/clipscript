@@ -55,3 +55,14 @@ test('v0.3 camera, timing, and effect options pass both', () => {
     assert.equal(checkSchema(clip), true, JSON.stringify(checkSchema.errors, null, 2));
     assert.equal(validate(clip).ok, true);
 });
+
+test('a switch turns off with "to": false in both; a boolean "on" fails both', () => {
+    const clip = structuredClone(examples['iris-phone']);
+    Object.assign(clip.screens.phone, { screen: 'list', list: { title: 'Family', sections: [{ rows: [{ id: 'alerts', label: 'Alerts', toggle: true }] }] } });
+    clip.chapters[1].steps.push({ toggle: 'phone.row:alerts', to: false });
+    assert.equal(checkSchema(clip), true, JSON.stringify(checkSchema.errors, null, 2));
+    assert.equal(validate(clip).ok, true);
+    clip.chapters[1].steps[clip.chapters[1].steps.length - 1] = { toggle: 'phone.row:alerts', on: false };
+    assert.equal(checkSchema(clip), false);
+    assert.equal(validate(clip).ok, false);
+});

@@ -10,7 +10,7 @@ const isStringList = value => Array.isArray(value) && value.every(item => typeof
 import { appWindow, byData, typeInto } from './shared.js';
 
 const stageFieldOf = record => record.stageField ?? 'Stage';
-const buttonsOf = record => record.buttons ?? ['Save'];
+const buttonsOf = record => (Array.isArray(record.buttons) ? record.buttons : ['Save']);
 
 /** Options for a dropdown field: the stage path for the stage field, or record.options[field]. */
 function optionsFor(record, field) {

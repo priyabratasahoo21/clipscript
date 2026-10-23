@@ -409,3 +409,41 @@ test('a phone list needs rows with ids, and "toggle" needs a row with a switch',
     delete clip.screens.phone.list;
     assert.ok(paths(validate(clip)).includes('screens.phone.list'), 'a list screen needs a list');
 });
+
+test('a switch turns off with "to": false; "on" still only names a screen', () => {
+    const clip = cloneIris();
+    Object.assign(clip.screens.phone, { screen: 'list', list: { title: 'Family', sections: [{ rows: [{ id: 'alerts', label: 'Alerts', toggle: true }] }] } });
+    clip.chapters[1].steps.push({ toggle: 'phone.row:alerts', to: false });
+    const last = clip.chapters[1].steps.length - 1;
+    const result = validate(clip);
+    assert.equal(result.ok, true, formatReport(result));
+    assert.ok(!result.warnings.some(w => w.path.startsWith(`chapters[1].steps[${last}]`)), '"to" is a known key');
+    clip.chapters[1].steps[last] = { toggle: 'phone.row:alerts', to: 'off' };
+    assert.ok(paths(validate(clip)).includes(`chapters[1].steps[${last}].to`));
+    clip.chapters[1].steps[last] = { toggle: 'phone.row:alerts', on: false };
+    assert.match(validate(clip).errors.find(e => e.path === `chapters[1].steps[${last}].on`).message, /screen id/);
+});
+
+test('a phone list without "screen": "list" warns that it never shows', () => {
+    const clip = cloneIris();
+    clip.screens.phone.list = { title: 'Family', sections: [{ rows: [{ id: 'alerts', label: 'Alerts', toggle: true }] }] };
+    const warning = validate(clip).warnings.find(w => w.path === 'screens.phone.list');
+    assert.match(warning?.hint ?? '', /"screen": "list"/);
+});
+
+test('the validator reports, never throws, on null or junk entries in lists', () => {
+    const cases = [
+        [clone(), clip => { clip.screens.flow.nodes[0] = null; }],
+        [clone(), clip => { clip.screens.crm.record.buttons = 'Save'; }],
+        [clone(), clip => { clip.chapters[0] = null; }],
+        [clone(), clip => { clip.chapters[0].steps[0] = 'click'; }],
+        [cloneClaw(), clip => { clip.screens.claw.connectors[0] = null; }],
+        [cloneClaw(), clip => { clip.screens.books.rows[0] = null; }],
+        [cloneGossipt(), clip => { clip.screens.chat.files[0] = null; }],
+        [cloneIris(), clip => { clip.screens.phone.notifications = [null]; }]
+    ];
+    for (const [clip, spoil] of cases) {
+        spoil(clip);
+        assert.equal(validate(clip).ok, false, spoil.toString());
+    }
+});

@@ -78,6 +78,7 @@ export class Camera {
         this.punchState = null;
         this.tracking = false;
         this.dived = null;
+        this.panned = null;
     }
 
     stageSize() {
@@ -94,7 +95,13 @@ export class Camera {
 
     goal() {
         const rect = this.resolve(this.target);
-        return this.dived ? this.cover(rect, this.dived.round) : this.frame(rect);
+        if (this.dived) return this.cover(rect, this.dived.round);
+        const framed = this.frame(rect);
+        if (!framed || !this.panned) return framed;
+        // after a pan: its world point stays in the centre, at its zoom relative to the target's framing
+        const size = this.stageSize();
+        const scale = framed.scale * this.panned.zoom;
+        return { scale, x: size.width / 2 - this.panned.x * scale, y: size.height * CENTRE_Y - this.panned.y * scale };
     }
 
     /** The transform at which a rect fills the whole stage (a round one covers the corners too, so √2 further). */
@@ -145,6 +152,7 @@ export class Camera {
         this.target = target;
         this.zoom = clampZoom(zoom);
         this.dived = null;
+        this.panned = null;
         this.punchState = null;
         return this.moveTo(this.goal(), options);
     }
@@ -171,6 +179,11 @@ export class Camera {
         }
         this.punchState = null;
         this.dived = null;
+        // remember the pan, so a resize or a punch-in easing back out returns to it
+        const framed = this.frame(this.resolve(this.target));
+        this.panned = framed
+            ? { x: (size.width / 2 - goal.x) / goal.scale, y: (size.height * CENTRE_Y - goal.y) / goal.scale, zoom: goal.scale / framed.scale }
+            : null;
         return this.moveTo(goal, options);
     }
 
@@ -258,6 +271,7 @@ export class Camera {
         this.target = target;
         this.zoom = 1;
         this.dived = { round };
+        this.panned = null;
         this.punchState = null;
         return this.moveTo(this.goal(), options);
     }
@@ -297,10 +311,9 @@ export class Camera {
             await ctx.wait(PUNCH_STEP_MS);
             state.elapsed += PUNCH_STEP_MS;
         }
-        // only ease back if nothing else has moved the camera meanwhile
-        if (this.punchState === state && this.moveId === moveAfterIn) {
-            this.punchState = null;
-            await this.moveTo(this.goal() ?? base, { ctx, duration: PUNCH_OUT_MS, ease: 'smooth' });
-        }
+        if (this.punchState !== state) return;
+        // the punch is over either way (so the next click punches again); only ease back if nothing else has moved the camera meanwhile
+        this.punchState = null;
+        if (this.moveId === moveAfterIn) await this.moveTo(this.goal() ?? base, { ctx, duration: PUNCH_OUT_MS, ease: 'smooth' });
     }
 }

@@ -217,6 +217,7 @@ var Cueflick = (() => {
     fragment.append(source.slice(last));
     return fragment;
   }
+  var isShown = (el) => el.isConnected && el.getClientRects().length > 0;
   function rectIn(world, el) {
     let x = 0;
     let y = 0;
@@ -518,7 +519,7 @@ var Cueflick = (() => {
       if (connector.enabled !== void 0 && typeof connector.enabled !== "boolean") report.error(`${at}.enabled`, "must be true or false.");
     });
   }
-  var connectorIds = (def) => Array.isArray(def.connectors) ? def.connectors.map((c) => c.id) : [];
+  var connectorIds = (def) => Array.isArray(def.connectors) ? def.connectors.filter(isObject).map((c) => c.id) : [];
   var fileIds = (def) => Array.isArray(def.files) ? def.files.filter(isObject).map((file) => file.id) : [];
   var referencesIn = (text) => [...String(text).matchAll(REFERENCE)].map((match) => match[2]);
   function checkReferences(text, def, path, report) {
@@ -574,13 +575,18 @@ var Cueflick = (() => {
     }
     return wrapper;
   }
-  function render(def, { screens }) {
+  function located(file, base) {
+    if (!base || typeof file.src !== "string" || /^(?:https:|data:)/i.test(file.src)) return file;
+    const url = new URL(file.src, base);
+    return url.protocol === "http:" || url.protocol === "https:" ? { ...file, src: url.href } : file;
+  }
+  function render(def, { screens, base }) {
     const look = LOOKS.includes(def.look) ? def.look : "warm";
     const assistant = def.assistant ?? def.app.name;
     const { el, body } = appWindow(def.app, { title: def.title ?? "New chat", className: `cf-aichat cf-ai-${look}` });
     const connectors = Array.isArray(def.connectors) ? def.connectors : [];
     const enabled = new Set(connectors.filter((c) => c.enabled).map((c) => c.id));
-    const files = new Map((Array.isArray(def.files) ? def.files : []).filter((file) => isObject(file) && typeof file.id === "string").map((file) => [file.id, file]));
+    const files = new Map((Array.isArray(def.files) ? def.files : []).filter((file) => isObject(file) && typeof file.id === "string").map((file) => [file.id, located(file, base)]));
     const sidebar = h("div", { class: "cf-ai-side" }, [
       h("div", { class: "cf-ai-new", text: look === "neutral" ? "\u270E  New chat" : "+ New chat" }),
       h("div", { class: "cf-ai-label", text: look === "neutral" ? "Chats" : "Recents" }),
@@ -1023,8 +1029,8 @@ var Cueflick = (() => {
       if (row2.detail !== void 0 && (!isObject(row2.detail) || Object.values(row2.detail).some((v) => typeof v !== "string"))) report.error(`${at}.detail`, "must map labels to strings.");
     });
   }
-  var rowIds = (def) => Array.isArray(def.rows) ? def.rows.map((row2) => row2.id) : [];
-  var rowById = (def, id) => def.rows.find((row2) => row2.id === id);
+  var rowIds = (def) => Array.isArray(def.rows) ? def.rows.filter(isObject).map((row2) => row2.id) : [];
+  var rowById = (def, id) => def.rows.find((row2) => isObject(row2) && row2.id === id);
   function statusPill(status, tone) {
     return h("span", { class: `cf-pill cf-tone-${tone ?? toneOf(status)}`, text: status });
   }
@@ -1179,7 +1185,7 @@ var Cueflick = (() => {
   // src/surfaces/crm-record.js
   var isStringList = (value) => Array.isArray(value) && value.every((item) => typeof item === "string");
   var stageFieldOf = (record) => record.stageField ?? "Stage";
-  var buttonsOf = (record) => record.buttons ?? ["Save"];
+  var buttonsOf = (record) => Array.isArray(record.buttons) ? record.buttons : ["Save"];
   function optionsFor(record, field) {
     if (field === stageFieldOf(record) && Array.isArray(record.stages)) return record.stages;
     return Array.isArray(record.options?.[field]) ? record.options[field] : null;
@@ -1620,7 +1626,7 @@ var Cueflick = (() => {
     width: 620,
     keys: ["workflow", "nodes"],
     parts: {
-      node: (def) => Array.isArray(def.nodes) ? def.nodes.map((node) => node.id) : []
+      node: (def) => Array.isArray(def.nodes) ? def.nodes.filter(isObject).map((node) => node.id) : []
     },
     validate: validateFlow,
     render: render4,
@@ -2513,6 +2519,7 @@ var Cueflick = (() => {
   function validatePhone(def, path, report) {
     if (def.screen !== void 0 && !SCREENS.includes(def.screen)) report.error(`${path}.screen`, `must be one of ${SCREENS.join(", ")}.`, suggest(def.screen, SCREENS));
     if (def.screen === "list" && def.list === void 0) report.error(`${path}.list`, 'is required when "screen" is "list".');
+    if (def.list !== void 0 && def.screen !== "list") report.warn(`${path}.list`, `only shows when "screen" is "list"; until then its rows can't be toggled or tapped.`, 'Add "screen": "list".');
     if (def.list !== void 0) validateList(def.list, `${path}.list`, report);
     for (const key of ["time", "date", "assistant"]) {
       if (def[key] !== void 0 && typeof def[key] !== "string") report.error(`${path}.${key}`, "must be a string.");
@@ -2744,21 +2751,21 @@ var Cueflick = (() => {
     recap: (view) => view.iris(false),
     actions: {
       toggle: {
-        summary: 'Flip a switch in the list: { "toggle": "phone.row:summaries" } (add "on": false to switch it off).',
+        summary: 'Flip a switch in the list: { "toggle": "phone.row:summaries" } (add "to": false to switch it off).',
         part: "row",
-        keys: ["on"],
+        keys: ["to"],
         follow: (view, step) => view.find("row", String(step.toggle).split(":").slice(1).join(":")),
         validate(step, def, path, report) {
           const id = String(step.toggle).split(":").slice(1).join(":");
           const row2 = listRows(def).find((item) => item.id === id);
           if (row2 && row2.toggle === void 0) report.error(`${path}.toggle`, `row "${id}" has no switch; give it "toggle": false in the list.`);
-          if (step.on !== void 0 && typeof step.on !== "boolean") report.error(`${path}.on`, "must be true or false.");
+          if (step.to !== void 0 && typeof step.to !== "boolean") report.error(`${path}.to`, "must be true or false.");
         },
         async run(view, step, ctx) {
           const toggle = view.find("row", ctx.name)?.querySelector(".cf-ph-toggle");
           if (!toggle) return;
           if (!ctx.fast) view.touch(toggle);
-          toggle.classList.toggle("cf-on", step.on !== false);
+          toggle.classList.toggle("cf-on", step.to !== false);
           await ctx.wait(ctx.fast ? 0 : 700);
         }
       },
@@ -3032,9 +3039,9 @@ var Cueflick = (() => {
     layout: "stage",
     validate(clip2, report) {
       const chapters = Array.isArray(clip2.chapters) ? clip2.chapters : [];
-      const steps = chapters.flatMap((chapter) => Array.isArray(chapter.steps) ? chapter.steps : []);
-      if (!steps.some((step) => step && "tool" in step)) report.warn("chapters", 'no "tool" steps: show the assistant calling the connector.');
-      if (!steps.some((step) => step && "enter" in step) && (clip2.layout ?? "stage") === "stage") {
+      const steps = chapters.flatMap((chapter) => Array.isArray(chapter?.steps) ? chapter.steps : []).filter(isObject);
+      if (!steps.some((step) => "tool" in step)) report.warn("chapters", 'no "tool" steps: show the assistant calling the connector.');
+      if (!steps.some((step) => "enter" in step) && (clip2.layout ?? "stage") === "stage") {
         report.warn("chapters", 'in the stage layout, bring the target app on with an "enter" step so viewers see the result.');
       }
     }
@@ -3090,7 +3097,7 @@ var Cueflick = (() => {
       if (last && last.focus !== "all") {
         report.warn(`chapters[${chapters.length - 1}].focus`, 'this template ends best on a recap chapter with "focus": "all".');
       }
-      const usesPackets = chapters.some((chapter) => Array.isArray(chapter.steps) && chapter.steps.some((step) => step && "packet" in step));
+      const usesPackets = chapters.some((chapter) => Array.isArray(chapter?.steps) && chapter.steps.some((step) => isObject(step) && "packet" in step));
       if (!usesPackets) report.warn("chapters", 'no "packet" steps: add them to show data moving between the apps.');
     }
   };
@@ -5112,7 +5119,7 @@ var Cueflick = (() => {
           reject(STOP);
           return;
         }
-        const duration = Math.max(0, ms / pace);
+        const duration = Number.isFinite(ms / pace) ? Math.max(0, ms / pace) : 0;
         if (fast || duration === 0) {
           onFrame?.(1);
           resolve();
@@ -5414,18 +5421,20 @@ var Cueflick = (() => {
     }
     /**
      * Rebound after landing: `count` times, each `share` as high as the last, squashing less each
-     * time. Flight time goes with √height, measured against a reference flight.
+     * time. Flight time goes with √height, measured against a reference flight. A flat landing
+     * (no height) has nothing to rebound from, so it only squashes.
      */
     async rebound(actor, ctx, take, { count, share, height, reference, pieces = actor.pieces }) {
       let impact = 1;
       let rise = height;
-      for (let i = 0; i < count; i++) {
+      const times = height > 0 && reference.height > 0 ? count : 0;
+      for (let i = 0; i < times; i++) {
         if (!await this.squash(actor, ctx, take, { amount: impact, settle: BOUNCE_SETTLE_MS, pieces })) return;
         rise *= share;
         if (!await this.arc(actor, ctx, take, { ms: reference.ms * Math.sqrt(rise / reference.height), arc: rise, pieces })) return;
         impact *= 0.6;
       }
-      await this.squash(actor, ctx, take, { amount: count ? impact : 1, pieces });
+      await this.squash(actor, ctx, take, { amount: times ? impact : 1, pieces });
     }
     async spawn(actor, ctx, { at, effect = "pop", stagger = 90, bounces, bounciness } = {}) {
       const take = this.claim(actor);
@@ -5630,6 +5639,7 @@ var Cueflick = (() => {
       this.punchState = null;
       this.tracking = false;
       this.dived = null;
+      this.panned = null;
     }
     stageSize() {
       const width = this.stage.clientWidth;
@@ -5643,7 +5653,12 @@ var Cueflick = (() => {
     }
     goal() {
       const rect = this.resolve(this.target);
-      return this.dived ? this.cover(rect, this.dived.round) : this.frame(rect);
+      if (this.dived) return this.cover(rect, this.dived.round);
+      const framed = this.frame(rect);
+      if (!framed || !this.panned) return framed;
+      const size = this.stageSize();
+      const scale = framed.scale * this.panned.zoom;
+      return { scale, x: size.width / 2 - this.panned.x * scale, y: size.height * CENTRE_Y - this.panned.y * scale };
     }
     /** The transform at which a rect fills the whole stage (a round one covers the corners too, so √2 further). */
     cover(rect, round) {
@@ -5689,6 +5704,7 @@ var Cueflick = (() => {
       this.target = target;
       this.zoom = clampZoom(zoom);
       this.dived = null;
+      this.panned = null;
       this.punchState = null;
       return this.moveTo(this.goal(), options);
     }
@@ -5714,6 +5730,8 @@ var Cueflick = (() => {
       }
       this.punchState = null;
       this.dived = null;
+      const framed = this.frame(this.resolve(this.target));
+      this.panned = framed ? { x: (size.width / 2 - goal.x) / goal.scale, y: (size.height * CENTRE_Y - goal.y) / goal.scale, zoom: goal.scale / framed.scale } : null;
       return this.moveTo(goal, options);
     }
     /**
@@ -5791,6 +5809,7 @@ var Cueflick = (() => {
       this.target = target;
       this.zoom = 1;
       this.dived = { round };
+      this.panned = null;
       this.punchState = null;
       return this.moveTo(this.goal(), options);
     }
@@ -5827,10 +5846,9 @@ var Cueflick = (() => {
         await ctx.wait(PUNCH_STEP_MS);
         state.elapsed += PUNCH_STEP_MS;
       }
-      if (this.punchState === state && this.moveId === moveAfterIn) {
-        this.punchState = null;
-        await this.moveTo(this.goal() ?? base, { ctx, duration: PUNCH_OUT_MS, ease: "smooth" });
-      }
+      if (this.punchState !== state) return;
+      this.punchState = null;
+      if (this.moveId === moveAfterIn) await this.moveTo(this.goal() ?? base, { ctx, duration: PUNCH_OUT_MS, ease: "smooth" });
     }
   };
 
@@ -5857,8 +5875,9 @@ var Cueflick = (() => {
     place() {
       this.el.style.setProperty("transform", `translate(${this.x}px, ${this.y}px)`);
     }
-    /** Move to the centre of an element (or an offset within it). */
+    /** Move to the centre of an element (or an offset within it); a hidden one has nowhere to go. */
     async moveTo(target, ctx, { dx = 0.5, dy = 0.5 } = {}) {
+      if (!isShown(target)) return;
       const rect = rectIn(this.world, target);
       const goal = { x: rect.x + rect.w * dx, y: rect.y + rect.h * dy };
       this.el.classList.add("cf-visible");
@@ -5989,6 +6008,7 @@ var Cueflick = (() => {
     const selector = typeof step[action] === "string" ? parseSelector(step[action]) : null;
     const selected = selector && hasOwn(screens, selector.screen) && selector.part ? selector.screen : null;
     if (step.on !== void 0) {
+      if (typeof step.on !== "string") return { error: '"on" names the screen this step runs on, so it must be a screen id.', path: "on" };
       if (!hasOwn(screens, step.on)) return { error: `screen "${step.on}" is not defined.`, path: "on", candidates: keys };
       if (!hasOwn(screens[step.on].surface.actions, action)) return { error: `"${action}" can't run on "${step.on}".`, path: "on" };
       if (selected && selected !== step.on) {
@@ -6081,7 +6101,8 @@ var Cueflick = (() => {
      * @param {HTMLElement} host   element that receives events (the <cue-flick> element)
      * @param {HTMLElement} mount  container to render into (inside the shadow root)
      * @param {object} clip        a clip that passed validateClip()
-     * @param {object} [options]   autoplay ('view' | 'none'), controls, chapter, mode, endcard, reducedMotion
+     * @param {object} [options]   autoplay ('view' | 'none'), controls, chapter, mode, endcard, reducedMotion,
+     *                             base (the clip's URL, which relative image paths resolve against)
      */
     constructor(host, mount2, clip2, options = {}) {
       this.host = host;
@@ -6213,7 +6234,7 @@ var Cueflick = (() => {
       this.views = /* @__PURE__ */ Object.create(null);
       this.zTop = 0;
       for (const { key, def, surface } of entries) {
-        const view = surface.render(def, { screens: this.clip.screens, accent: this.design.accent });
+        const view = surface.render(def, { screens: this.clip.screens, accent: this.design.accent, base: this.options.base });
         const rect = layout[key];
         view.el.classList.add("cf-screen");
         view.el.classList.toggle("cf-off", def.hidden === true);
@@ -6258,7 +6279,7 @@ var Cueflick = (() => {
       const entry = this.views[parsed.screen];
       if (!parsed.part) return { ...entry.rect, kind: "screen" };
       const el = entry.view.find(parsed.part, parsed.name);
-      return el ? { ...rectIn(this.world, el), kind: "part" } : { ...entry.rect, kind: "screen" };
+      return el && isShown(el) ? { ...rectIn(this.world, el), kind: "part" } : { ...entry.rect, kind: "screen" };
     }
     onResize() {
       if (!this.stage.clientWidth) return;
@@ -6508,10 +6529,10 @@ var Cueflick = (() => {
      */
     cameraFor(ctx) {
       return {
-        look: (el, options) => this.camera.look(rectIn(this.world, el), { ctx, ...options }),
+        look: (el, options) => isShown(el) ? this.camera.look(rectIn(this.world, el), { ctx, ...options }) : Promise.resolve(),
         back: (options) => this.camera.back({ ctx, ...options }),
         track: (el, within) => {
-          if (!this.design.camera.follow) return;
+          if (!this.design.camera.follow || !isShown(el)) return;
           this.alongside(this.camera.track(rectIn(this.world, el), ctx, within ? rectIn(this.world, within) : void 0), true);
         }
       };
@@ -6527,7 +6548,7 @@ var Cueflick = (() => {
     /** Follow mode: ease the camera toward what this step acts on, alongside the step. */
     followStep(entry, spec, step, name, ctx) {
       const el = (name && spec.part ? entry.view.find(spec.part, name) : null) ?? spec.follow?.(entry.view, step) ?? null;
-      if (!el) return;
+      if (!el || !isShown(el)) return;
       this.alongside(this.camera.follow({ ...rectIn(this.world, el), kind: FOLLOW_TRAIL }, ctx), true);
     }
     /** Await a move, or let it run alongside the next steps. */
@@ -7297,16 +7318,17 @@ ${surfaceStyles()}`;
           reducedMotion: this.hasAttribute("reduced-motion") ? true : void 0
         };
       }
+      /** The clip, and (when it was fetched) its URL, which relative image paths in it resolve against. */
       async #readClip(src) {
-        if (this.#clip) return this.#clip;
+        if (this.#clip) return { clip: this.#clip };
         const inline = this.querySelector('script[type="application/json"]');
-        if (inline) return JSON.parse(inline.textContent);
+        if (inline) return { clip: JSON.parse(inline.textContent) };
         if (src) {
           const response = await fetch(src, { credentials: "same-origin" });
           if (!response.ok) throw new Error(`could not load ${src} (HTTP ${response.status})`);
-          return response.json();
+          return { clip: await response.json(), base: response.url || void 0 };
         }
-        return null;
+        return { clip: null };
       }
       async #load() {
         const token = ++this.#loadToken;
@@ -7323,7 +7345,7 @@ ${surfaceStyles()}`;
         this.#player = null;
         const source = src ?? "this clip";
         try {
-          const clip2 = await this.#readClip(src);
+          const { clip: clip2, base } = await this.#readClip(src);
           if (token !== this.#loadToken || !clip2) return;
           const result = validateClip(clip2);
           if (!result.ok) {
@@ -7332,7 +7354,7 @@ ${surfaceStyles()}`;
             this.dispatchEvent(new CustomEvent("cueflick:error", { detail: { result }, bubbles: true, composed: true }));
             return;
           }
-          this.#player = new Player(this, mount2, clip2, this.#options());
+          this.#player = new Player(this, mount2, clip2, { ...this.#options(), base });
         } catch (error) {
           if (token !== this.#loadToken) return;
           mount2.replaceChildren(errorPanel([{ path: "", message: error.message }], source));

@@ -4,7 +4,7 @@
  */
 
 import { STOP } from './constants.js';
-import { h, rectIn, s } from './dom.js';
+import { h, isShown, rectIn, s } from './dom.js';
 import { easeInOut } from './timeline.js';
 
 const MOVE_MS = 650;
@@ -32,8 +32,9 @@ export class Cursor {
         this.el.style.setProperty('transform', `translate(${this.x}px, ${this.y}px)`);
     }
 
-    /** Move to the centre of an element (or an offset within it). */
+    /** Move to the centre of an element (or an offset within it); a hidden one has nowhere to go. */
     async moveTo(target, ctx, { dx = 0.5, dy = 0.5 } = {}) {
+        if (!isShown(target)) return;
         const rect = rectIn(this.world, target);
         const goal = { x: rect.x + rect.w * dx, y: rect.y + rect.h * dy };
         this.el.classList.add('cf-visible');

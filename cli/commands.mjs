@@ -2,12 +2,12 @@
 // loaded only by `snapshot` and `render`, and only if it is installed.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { appendFile, copyFile, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { appendFile, copyFile, mkdir, mkdtemp, readdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, extname, join, resolve, sep } from 'node:path';
 import { catalog, formatReport, GENERIC_ACTIONS, validate } from '../dist/cueflick.mjs';
-import { PACKAGE_ROOT, startPreviewServer, startStaticServer } from './server.mjs';
+import { isInside, PACKAGE_ROOT, startPreviewServer, startStaticServer } from './server.mjs';
 
 const EXAMPLE = join(PACKAGE_ROOT, 'examples', 'closed-won', 'closed-won.clip.json');
 const GUIDE = join(PACKAGE_ROOT, 'llms.txt');
@@ -260,9 +260,13 @@ async function inlineImages(clip, baseDir) {
             if (typeof src !== 'string' || /^(?:https:|data:)/i.test(src)) continue;
             const path = resolve(baseDir, src);
             if (!path.startsWith(baseDir + sep)) throw new CliError(`${src} is outside the clip's folder.`);
-            const bytes = await readFile(path).catch(() => {
+            const cantRead = () => {
                 throw new CliError(`Can't read ${src} (looked for ${path}).`);
-            });
+            };
+            // check where the file really is, so a symlink can't pull in a file from outside the folder
+            const [real, realBase] = await Promise.all([realpath(path).catch(cantRead), realpath(baseDir)]);
+            if (!isInside(real, realBase)) throw new CliError(`${src} is outside the clip's folder.`);
+            const bytes = await readFile(real).catch(cantRead);
             if (bytes.length > MAX_INLINE_IMAGE) throw new CliError(`${src} is over 8 MB; use a smaller image.`);
             item.src = `data:${IMAGE_MIME[extname(path).toLowerCase()]};base64,${bytes.toString('base64')}`;
         }
