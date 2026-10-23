@@ -3,9 +3,11 @@
 
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { exportCommand } from '../../cli/commands.mjs';
 import { startPreviewServer } from '../../cli/server.mjs';
 
 let playwright = null;
@@ -532,14 +534,22 @@ test('a bouncing ball stretches in the air, and each impact squashes less than t
                 const ball = document.querySelector('cue-flick')?.shadowRoot?.querySelector('.cf-actor-sphere');
                 const scale = ball && /scale\(([\d.]+), ([\d.]+)\)/.exec(ball.style.transform);
                 if (scale && ball.style.opacity === '1') out.push([performance.now() - start, Number(scale[1]), Number(scale[2])]);
-                await new Promise(resolve => setTimeout(resolve, 16));
+                // one sample per drawn frame, so the readings follow the animation rather than a timer
+                await new Promise(resolve => requestAnimationFrame(resolve));
             }
             return out;
         });
         const stretch = Math.max(...samples.map(([, , sy]) => sy));
         assert.ok(stretch > 1.1, `it stretches tall in the air (scaleY ${stretch})`);
-        const peaks = samples.filter((sample, i) => i > 0 && i < samples.length - 1 && sample[1] > 1.08
-            && sample[1] >= samples[i - 1][1] && sample[1] > samples[i + 1][1]).map(([, sx]) => sx);
+        const tops = samples.filter((sample, i) => i > 0 && i < samples.length - 1 && sample[1] > 1.08
+            && sample[1] >= samples[i - 1][1] && sample[1] > samples[i + 1][1]);
+        // under load one squash can read as two tops; tops this close together are one impact (a flight separates real ones)
+        const peaks = tops.reduce((merged, [time, sx]) => {
+            const last = merged.at(-1);
+            if (last && time - last.time < 150) Object.assign(last, { time, sx: Math.max(last.sx, sx) });
+            else merged.push({ time, sx });
+            return merged;
+        }, []).map(peak => peak.sx);
         // the first impact is the hardest squash; the two rebounds after it squash less each time
         const impacts = peaks.slice(peaks.indexOf(Math.max(...peaks)));
         assert.ok(impacts.length >= 3, `expected an impact and two rebounds, got squashes ${peaks}`);
@@ -674,3 +684,61 @@ test('following steps on rows that are about to appear keeps the camera on the w
         await browser.close();
     }
 });
+
+// ---------- --use: a screen type and template made outside Cueflick ----------
+
+const USE_FIXTURES = new URL('../fixtures/use/', import.meta.url);
+
+/** A project folder with the fixture kanban screen, board template, and clip. */
+async function useProject() {
+    const dir = await mkdtemp(join(tmpdir(), 'cueflick-use-'));
+    await mkdir(join(dir, 'screens'));
+    for (const file of ['kanban.mjs', 'board-template.mjs']) await writeFile(join(dir, 'screens', file), await readFile(new URL(file, USE_FIXTURES)));
+    await writeFile(join(dir, 'board.clip.json'), await readFile(new URL('board.clip.json', USE_FIXTURES)));
+    return { dir, modules: ['kanban.mjs', 'board-template.mjs'].map(file => join(dir, 'screens', file)) };
+}
+
+test('preview with --use plays a screen type from your own module, and shows a module that fails', { skip: !playwright }, async () => {
+    const { dir, modules } = await useProject();
+    await writeFile(join(dir, 'screens', 'broken.mjs'), "throw new Error('kanban exploded');\n");
+    const working = await startPreviewServer(join(dir, 'board.clip.json'), { port: 0, reload: false, offline: true, use: modules });
+    const failing = await startPreviewServer(join(dir, 'board.clip.json'), { port: 0, reload: false, offline: true, use: [join(dir, 'screens', 'broken.mjs')] });
+    const browser = await playwright.chromium.launch();
+    try {
+        const { page, errors } = await openPage(browser, `${working.url}/?chapter=0`);
+        await ready(page, 0);
+        assert.deepEqual(await page.evaluate(() => [...(document.querySelector('cue-flick').shadowRoot.querySelectorAll('.kb-col')[1]?.querySelectorAll('.kb-card') ?? [])].map(card => card.dataset.card)), ['41', '42'], 'the drag step moved card 42 to Done');
+        assert.deepEqual(errors, []);
+        const broken = await openPage(browser, `${failing.url}/?chapter=0`);
+        await broken.page.waitForSelector('.use-error');
+        assert.match(await broken.page.textContent('.use-error'), /kanban exploded/);
+    } finally {
+        await browser.close();
+        await working.close();
+        await failing.close();
+        await rm(dir, { recursive: true, force: true });
+    }
+});
+
+for (const engine of ['chromium', 'webkit', 'firefox']) {
+    test(`${engine}: an exported film with --use screens plays on its own, straight from the file`, { skip: !playwright }, async () => {
+        const { dir, modules } = await useProject();
+        const browser = await playwright[engine].launch();
+        try {
+            const log = console.log;
+            console.log = () => {};
+            try {
+                await exportCommand([join(dir, 'board.clip.json')], { out: join(dir, 'board.html'), offline: true, use: modules });
+            } finally {
+                console.log = log;
+            }
+            const { page, errors } = await openPage(browser, pathToFileURL(join(dir, 'board.html')).href);
+            await page.waitForFunction(() => document.querySelector('cue-flick')?.player?.state === 'ended', null, { timeout: 20000 });
+            assert.equal(await page.evaluate(() => [...document.querySelector('cue-flick').shadowRoot.querySelectorAll('.kb-col')][1].querySelectorAll('.kb-card').length), 2);
+            assert.deepEqual(errors, []);
+        } finally {
+            await browser.close();
+            await rm(dir, { recursive: true, force: true });
+        }
+    });
+}

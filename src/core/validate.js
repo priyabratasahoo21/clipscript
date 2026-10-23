@@ -23,6 +23,7 @@ const APP_KEYS = ['name', 'color', 'icon'];
 const SCREEN_COMMON_KEYS = ['surface', 'app', 'hidden', 'place', 'width', 'mode'];
 const SCREEN_MODES = ['light', 'dark'];
 const FONT_PATTERN = /^[\w\s,'"-]+$/;
+const CUSTOM_HINT = 'If you made it, register it before the clip is checked: on a page, import its module first; with the CLI, add --use <its file>.';
 
 class Report {
     constructor() {
@@ -302,7 +303,7 @@ function checkScreens(report, screens) {
         }
         const surface = getSurface(screen.surface);
         if (!surface) {
-            report.error(`${path}.surface`, `"${screen.surface}" is not a known surface. Known: ${surfaceNames().join(', ')}.`, suggest(screen.surface, surfaceNames()));
+            report.error(`${path}.surface`, `"${screen.surface}" is not a known surface. Known: ${surfaceNames().join(', ')}.`, suggest(screen.surface, surfaceNames()) ?? CUSTOM_HINT);
             continue;
         }
         checkApp(report, screen.app, `${path}.app`);
@@ -569,7 +570,7 @@ export function validateClip(clip) {
 
     const template = typeof clip.template === 'string' ? getTemplate(clip.template) : undefined;
     if (!template) {
-        report.error('template', `"${clip.template}" is not a known template. Known: ${templateNames().join(', ')}.`, suggest(clip.template, templateNames()));
+        report.error('template', `"${clip.template}" is not a known template. Known: ${templateNames().join(', ')}.`, suggest(clip.template, templateNames()) ?? CUSTOM_HINT);
     }
     const screens = checkScreens(report, clip.screens);
     if (template) {

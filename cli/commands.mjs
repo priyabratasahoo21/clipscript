@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, extname, join, resolve, sep } from 'node:path';
 import { catalog, formatReport, GENERIC_ACTIONS, validate } from '../dist/cueflick.mjs';
 import { isInside, PACKAGE_ROOT, startPreviewServer, startStaticServer } from './server.mjs';
+import { API_NAMES, loadUse, otherImports, UseError, useFiles } from './use.mjs';
 
 const EXAMPLE = join(PACKAGE_ROOT, 'examples', 'closed-won', 'closed-won.clip.json');
 const GUIDE = join(PACKAGE_ROOT, 'llms.txt');
@@ -47,6 +48,16 @@ async function loadValidClip(file) {
     return clip;
 }
 
+/** Register the screen types and templates in the --use modules; returns their absolute paths. */
+async function useModules(value) {
+    try {
+        return await loadUse(useFiles(value));
+    } catch (error) {
+        if (error instanceof UseError) throw new CliError(error.message);
+        throw error;
+    }
+}
+
 async function loadPlaywright() {
     try {
         return await import('playwright');
@@ -64,6 +75,8 @@ async function waitForReady(page, chapter) {
     await page.waitForFunction(index => {
         const film = globalThis.document.querySelector('cue-flick');
         if (film?.shadowRoot?.querySelector('.cf-error')) throw new Error('the clip failed to load');
+        const failed = globalThis.document.querySelector('.use-error');
+        if (failed) throw new Error(failed.textContent);
         return film?.player?.readyChapter === index;
     }, chapter, { timeout: READY_TIMEOUT_MS });
     await page.evaluate(() => globalThis.document.fonts.ready);
@@ -72,8 +85,9 @@ async function waitForReady(page, chapter) {
 
 // ---------- commands ----------
 
-export async function validateCommand(files, { json }) {
+export async function validateCommand(files, { json, use }) {
     if (files.length === 0) throw new CliError('Give at least one clip file to validate.');
+    await useModules(use);
     let failed = false;
     const results = [];
     for (const file of files) {
@@ -86,9 +100,10 @@ export async function validateCommand(files, { json }) {
     return failed ? 1 : 0;
 }
 
-export async function previewCommand([file], { port, offline }) {
+export async function previewCommand([file], { port, offline, use }) {
     await loadClip(file);
-    const server = await startPreviewServer(file, { port: integerOption(port, 'port', { min: 0, max: 65535, fallback: 4321 }), reload: true, offline });
+    const modules = await useModules(use);
+    const server = await startPreviewServer(file, { port: integerOption(port, 'port', { min: 0, max: 65535, fallback: 4321 }), reload: true, offline, use: modules });
     console.log(`Previewing ${file} at ${server.url}  (reloads when the file changes; Ctrl+C to stop)`);
     await new Promise(() => {});
 }
@@ -101,13 +116,14 @@ export async function demoCommand(_args, { port }) {
     await new Promise(() => {});
 }
 
-export async function snapshotCommand([file], { out, width, mode, poster, offline }) {
+export async function snapshotCommand([file], { out, width, mode, poster, offline, use }) {
+    const modules = await useModules(use);
     const clip = await loadValidClip(file);
     const { chromium } = await loadPlaywright();
     const viewportWidth = integerOption(width, 'width', { min: 320, max: 3840, fallback: 1280 });
     const dir = resolve(out ?? `${stem(file)}-snapshots`);
     await mkdir(dir, { recursive: true });
-    const server = await startPreviewServer(file, { port: 0, reload: false, offline });
+    const server = await startPreviewServer(file, { port: 0, reload: false, offline, use: modules });
     const browser = await chromium.launch();
     try {
         const page = await browser.newPage({ viewport: { width: viewportWidth, height: Math.round(viewportWidth * 9 / 16) + 160 } });
@@ -159,7 +175,8 @@ async function moveFile(from, to) {
     }
 }
 
-export async function renderCommand([file], { out, width, mode, offline }) {
+export async function renderCommand([file], { out, width, mode, offline, use }) {
+    const modules = await useModules(use);
     const clip = await loadValidClip(file);
     const target = resolve(out ?? `${stem(file)}.mp4`);
     const format = extname(target).toLowerCase();
@@ -169,7 +186,7 @@ export async function renderCommand([file], { out, width, mode, offline }) {
     const w = integerOption(width, 'width', { min: 320, max: 3840, fallback: 1280 });
     const size = { width: w, height: Math.round(w * 9 / 16) };
     const workDir = await mkdtemp(join(tmpdir(), 'cueflick-'));
-    const server = await startPreviewServer(file, { port: 0, reload: false, offline });
+    const server = await startPreviewServer(file, { port: 0, reload: false, offline, use: modules });
     const browser = await chromium.launch();
     try {
         const context = await browser.newContext({ viewport: size, recordVideo: { dir: workDir, size } });
@@ -177,6 +194,15 @@ export async function renderCommand([file], { out, width, mode, offline }) {
         const query = new URLSearchParams({ bare: '1', controls: 'none', ...(mode ? { mode } : {}) });
         console.log(`Recording "${clip.title}" (${clip.chapters.length} chapters) in real time…`);
         await page.goto(`${server.url}/?${query}`);
+        // runs inside the page: fail now, not after the 10-minute wait, if a --use module didn't load
+        const started = await page.waitForFunction(() => {
+            const note = globalThis.document.querySelector('.use-error');
+            if (note) return { error: note.textContent };
+            const film = globalThis.document.querySelector('cue-flick');
+            if (film?.shadowRoot?.querySelector('.cf-error')) return { error: `the clip failed to load: ${film.shadowRoot.querySelector('.cf-error').textContent}` };
+            return film?.player ? { error: null } : null;
+        }, null, { timeout: READY_TIMEOUT_MS }).then(handle => handle.jsonValue());
+        if (started.error) throw new CliError(started.error);
         // runs inside the page
         await page.evaluate(() => new Promise((done, fail) => {
             const timer = setTimeout(() => fail(new Error('film did not finish within 10 minutes')), 600000);
@@ -227,7 +253,8 @@ export async function initCommand([dir = '.'], { ai }) {
     return 0;
 }
 
-export async function catalogCommand(_args, { json }) {
+export async function catalogCommand(_args, { json, use }) {
+    await useModules(use);
     const info = catalog();
     if (json) {
         console.log(JSON.stringify({ ...info, genericActions: GENERIC_ACTIONS }, null, 2));
@@ -273,7 +300,50 @@ async function inlineImages(clip, baseDir) {
     }
 }
 
-export async function exportCommand([file], { out, offline }) {
+const dataModule = source => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
+
+/**
+ * With --use, the film needs its screen modules too: each is embedded as a data: URL, "cueflick"
+ * maps to the inlined player, and the film is created once they've run (so its screens are known).
+ */
+async function embedUse(modules, json) {
+    const urls = [];
+    for (const path of modules) {
+        const source = await readFile(path, 'utf8');
+        const others = otherImports(source);
+        if (others.length) {
+            throw new CliError(`export embeds each --use module as one file, but ${basename(path)} imports ${others.join(', ')}. Bundle it into one file first (for example with esbuild), or move that code into it.`);
+        }
+        urls.push(dataModule(source));
+    }
+    const player = dataModule(`const C = globalThis.Cueflick;\nexport const { ${API_NAMES.join(', ')} } = C;\nexport default C;\n`);
+    return {
+        head: `<script type="importmap">${JSON.stringify({ imports: { cueflick: player } })}</script>\n`,
+        film: `<div id="cueflick-film"></div>
+<script type="application/json" id="cueflick-clip">
+${json}
+</script>
+<script type="module">
+import * as Cueflick from 'cueflick';
+const slot = document.getElementById('cueflick-film');
+try {
+  for (const url of ${JSON.stringify(urls)}) {
+    const mod = await import(url);
+    if (typeof mod.default === 'function') await mod.default(Cueflick);
+  }
+  const film = document.createElement('cue-flick');
+  film.clip = JSON.parse(document.getElementById('cueflick-clip').textContent);
+  slot.replaceWith(film);
+} catch (error) {
+  slot.textContent = 'This film\\'s screens failed to load: ' + error.message;
+  throw error;
+}
+</script>`
+    };
+}
+
+export async function exportCommand([file], { out, offline, use }) {
+    const modules = await useModules(use);
     const clip = await loadValidClip(file);
     await inlineImages(clip, dirname(resolve(file)));
     const target = resolve(out ?? `${stem(file)}.html`);
@@ -281,6 +351,7 @@ export async function exportCommand([file], { out, offline }) {
     const player = await readFile(join(PACKAGE_ROOT, 'dist', 'cueflick.min.js'), 'utf8');
     // JSON with "<" escaped can't close the <script> element it sits in
     const json = JSON.stringify(clip, null, 2).replace(/</g, '\\u003c');
+    const custom = modules.length ? await embedUse(modules, json) : null;
     const fonts = offline ? '' : '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap">\n';
     const html = `<!doctype html>
 <html lang="en">
@@ -296,14 +367,14 @@ ${fonts}<style>
   p { margin: 0 0 24px; color: #9ba4b4; max-width: 760px; line-height: 1.55; }
 </style>
 <script>${inlineScriptSafe(player)}</script>
-</head>
+${custom?.head ?? ''}</head>
 <body>
 <main>
 <h1>${escapeHtml(clip.title)}</h1>
 <p>${escapeHtml(clip.story.overview)}</p>
-<cue-flick><script type="application/json">
+${custom?.film ?? `<cue-flick><script type="application/json">
 ${json}
-</script></cue-flick>
+</script></cue-flick>`}
 </main>
 </body>
 </html>

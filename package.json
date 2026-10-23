@@ -1,6 +1,6 @@
 {
   "name": "cueflick",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Cueflick: product films for software, written as data. One JSON clip describes app screens, a directed camera, and motion-graphics characters; Cueflick plays it in any web page or records it to video. Any AI agent can write one.",
   "keywords": [
     "product-film",

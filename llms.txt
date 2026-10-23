@@ -21,6 +21,9 @@ type when the app you need isn't built in.
 5. Share it: `npx cueflick export <file>` (one self-contained .html) or
    `npx cueflick render <file> --out film.mp4` (video), or embed with <cue-flick src="...">.
 
+If the clip uses a screen type or template you added (Part 3), add `--use <its module>` to every
+command above.
+
 # Part 1 — the format
 
 ## File anatomy
@@ -243,7 +246,8 @@ A film is a sequence of beats. A beat is one new thing the viewer notices. Aim f
 
 # Part 3 — adding a screen type
 
-When the app you need isn't built in, register a surface before the film loads:
+When the app you need isn't built in, write a screen type in its own module, e.g.
+screens/kanban.mjs:
 
   import { registerSurface, h } from 'cueflick';
 
@@ -252,7 +256,7 @@ When the app you need isn't built in, register a surface before the film loads:
     summary: 'A kanban board: cards move between columns.',
     width: 520,                              // default width in world units
     keys: ['columns'],                       // screen keys it reads (others are warned about)
-    styles: '.kb-col { … }',                 // CSS, scoped to the film's shadow root
+    styles: '.kb { flex-direction: row; } .kb-col { background: var(--cf-win-2); }',
     parts: { card: def => def.columns.flatMap(c => c.cards.map(card => card.id)) },
     validate(def, path, report) { /* report.error(path, message, hint) / report.warn(...) */ },
     render(def) {
@@ -260,8 +264,8 @@ When the app you need isn't built in, register a surface before the film loads:
       return { el, find: (part, name) => /* the element for "board.card:name" */ null };
     },
     actions: {
-      move: {
-        summary: 'Move a card to a column: { "move": "board.card:42", "to": "Done" }.',
+      drag: {
+        summary: 'Drag a card to a column: { "drag": "board.card:42", "to": "Done" }.',
         part: 'card', keys: ['to'],
         validate(step, def, path, report) {},
         async run(view, step, ctx) {
@@ -272,7 +276,26 @@ When the app you need isn't built in, register a surface before the film loads:
     }
   });
 
+Instead of importing, the module can export a function that receives Cueflick's API:
+  export default ({ registerSurface, h }) => { registerSurface({ … }); };
+
+Use it everywhere by naming the module with --use (repeat it, or separate files with commas):
+  npx cueflick validate board.clip.json --use screens/kanban.mjs
+  npx cueflick snapshot board.clip.json --use screens/kanban.mjs
+The same flag works for preview, render, export, and catalog. export embeds the module in the
+HTML file, so keep it to one file that imports only 'cueflick'. On your own web page, import the
+module after cueflick and before the film loads.
+
+A clip names a template, and each built-in template needs its own screens. If none fits, register
+one too (same module, or another --use file):
+  registerTemplate({ name: 'board-update', title: 'Board update', summary: '…', requires: ['kanban'], layout: 'stage' });
+
 Rules: build DOM only with h() / s() (text only; no innerHTML, no event-handler attributes);
 every wait goes through ctx so pause, pace, and seeking work; handle ctx.fast by jumping to the
-end state. For complete examples, read browser-app.js (a small surface) and phone.js (parts, list
-rows, the touch ripple) in https://github.com/priyabratasahoo21/cueflick/tree/main/src/surfaces.
+end state. An action can't reuse a built-in step's name (focus, pan, move, wait, …); registering
+one throws. The root element sits in the film's light or dark theme: style with its variables
+(--cf-win, --cf-win-2, --cf-text, --cf-dim, --cf-line, --app, --cf-accent, --cf-radius) so the
+screen fits both. "cf-window" gives the window frame and stacks its children; set
+flex-direction: row for a horizontal layout. For complete examples, read browser-app.js (a small
+surface) and phone.js (parts, list rows, the touch ripple) in
+https://github.com/priyabratasahoo21/cueflick/tree/main/src/surfaces.

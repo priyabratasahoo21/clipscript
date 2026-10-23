@@ -1,4 +1,111 @@
-/*! cueflick v0.3.0 | MIT License | product films for software, written as data */
+/*! cueflick v0.3.1 | MIT License | product films for software, written as data */
+
+// src/core/util.js
+var isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+var hasOwn = (object, key) => object !== null && object !== void 0 && Object.prototype.hasOwnProperty.call(object, key);
+var isHexColor = (value) => typeof value === "string" && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value);
+var clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+function levenshtein(a, b) {
+  const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let diagonal = prev[0];
+    prev[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const above = prev[j];
+      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diagonal + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diagonal = above;
+    }
+  }
+  return prev[b.length];
+}
+function closest(word, options) {
+  const target = String(word).toLowerCase();
+  let best = null;
+  let bestDistance = Infinity;
+  for (const option of options) {
+    const distance = levenshtein(target, String(option).toLowerCase());
+    if (distance < bestDistance) {
+      best = option;
+      bestDistance = distance;
+    }
+  }
+  const limit = Math.max(2, Math.floor(target.length / 3));
+  return bestDistance <= limit ? best : null;
+}
+var suggest = (word, options) => {
+  const match = closest(word, options);
+  return match === null ? void 0 : `Did you mean "${match}"?`;
+};
+function parseSelector(selector) {
+  const match = /^([A-Za-z_][\w-]*)(?:\.([a-z]+):(.+))?$/.exec(String(selector ?? ""));
+  return match ? { screen: match[1], part: match[2] ?? null, name: match[3] ?? null } : null;
+}
+var initials = (name) => String(name).split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
+function nameColor(name) {
+  let hue = 0;
+  for (const char of String(name)) hue = (hue * 31 + char.charCodeAt(0)) % 360;
+  return `hsl(${hue} 55% 50%)`;
+}
+function seeded(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = state + 1831565813 >>> 0;
+    let t = state;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+var isImageSource = (value) => typeof value === "string" && (/^https:\/\/[^\s"'<>]+$/i.test(value) || /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,[A-Za-z0-9+/=]+$/i.test(value) || /^[\w ./-]+\.(?:png|jpe?g|gif|webp|avif)$/i.test(value) && !value.startsWith("/") && !value.split("/").includes(".."));
+
+// src/core/steps.js
+var GENERIC_ACTIONS = ["focus", "pan", "dive", "blur", "caption", "wait", "packet", "enter", "exit", "front", "spawn", "move", "leave", "confetti", "backdrop"];
+var MOTION_KEYS = ["duration", "ease"];
+var GENERIC_KEYS = {
+  focus: ["zoom", ...MOTION_KEYS, "async"],
+  pan: [...MOTION_KEYS, "async"],
+  dive: [...MOTION_KEYS, "into"],
+  blur: ["amount"],
+  caption: [],
+  wait: [],
+  packet: [],
+  enter: ["from", ...MOTION_KEYS],
+  exit: ["to", ...MOTION_KEYS],
+  front: ["dim"],
+  spawn: ["at", "perch", "offset", "effect", "stagger", "bounces", "bounciness"],
+  move: ["to", "perch", "offset", "path", "height", "bounces", "bounciness", ...MOTION_KEYS, "async"],
+  leave: ["effect"],
+  confetti: ["count", "colors", "power"],
+  backdrop: []
+};
+var SURFACE_STEP_KEYS = ["on", "punch"];
+var DIRECTIONS = ["left", "right", "top", "bottom", "fade", "zoom", "pop", "drop", "launch", "minimize", "flip"];
+var SCREEN_ACTIONS = ["enter", "exit", "front"];
+function actionOf(step, surfaceActions) {
+  return Object.keys(step).find((key) => GENERIC_ACTIONS.includes(key) || surfaceActions.has(key)) ?? null;
+}
+function resolveStepScreen(step, action, screens) {
+  const keys = Object.keys(screens);
+  const owners = keys.filter((key) => hasOwn(screens[key].surface.actions, action));
+  const selector = typeof step[action] === "string" ? parseSelector(step[action]) : null;
+  const selected = selector && hasOwn(screens, selector.screen) && selector.part ? selector.screen : null;
+  if (step.on !== void 0) {
+    if (typeof step.on !== "string") return { error: '"on" names the screen this step runs on, so it must be a screen id.', path: "on" };
+    if (!hasOwn(screens, step.on)) return { error: `screen "${step.on}" is not defined.`, path: "on", candidates: keys };
+    if (!hasOwn(screens[step.on].surface.actions, action)) return { error: `"${action}" can't run on "${step.on}".`, path: "on" };
+    if (selected && selected !== step.on) {
+      return { error: `"on": "${step.on}" disagrees with the target's screen "${selected}"; remove "on" or fix the target.`, path: "on" };
+    }
+    return { key: step.on };
+  }
+  if (selected) {
+    if (!hasOwn(screens[selected].surface.actions, action)) return { error: `"${action}" doesn't work on "${selected}"; check the target.` };
+    return { key: selected };
+  }
+  if (owners.length === 1) return { key: owners[0] };
+  if (owners.length === 0) return { error: `"${action}" needs a screen that supports it, and this clip has none.` };
+  return { error: `"${action}" could apply to ${owners.join(" or ")}; add "on": "<screen>".` };
+}
 
 // src/templates/layouts.js
 var TOP = 92;
@@ -71,6 +178,8 @@ function assertName(kind, name) {
 function registerSurface(definition) {
   assertName("Surface", definition?.name);
   if (typeof definition.render !== "function") throw new TypeError(`Surface "${definition.name}" needs a render() function`);
+  const clash = Object.keys(definition.actions ?? {}).find((action) => GENERIC_ACTIONS.includes(action));
+  if (clash) throw new TypeError(`Surface "${definition.name}": "${clash}" is a built-in step (${GENERIC_ACTIONS.join(", ")}); give the action another name`);
   surfaces.set(definition.name, { parts: {}, actions: {}, width: 460, ...definition });
 }
 function registerTemplate(definition) {
@@ -178,64 +287,6 @@ function rectIn(world, el) {
   }
   return { x, y, w: el.offsetWidth, h: el.offsetHeight };
 }
-
-// src/core/util.js
-var isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
-var hasOwn = (object, key) => object !== null && object !== void 0 && Object.prototype.hasOwnProperty.call(object, key);
-var isHexColor = (value) => typeof value === "string" && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value);
-var clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-function levenshtein(a, b) {
-  const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= a.length; i++) {
-    let diagonal = prev[0];
-    prev[0] = i;
-    for (let j = 1; j <= b.length; j++) {
-      const above = prev[j];
-      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diagonal + (a[i - 1] === b[j - 1] ? 0 : 1));
-      diagonal = above;
-    }
-  }
-  return prev[b.length];
-}
-function closest(word, options) {
-  const target = String(word).toLowerCase();
-  let best = null;
-  let bestDistance = Infinity;
-  for (const option of options) {
-    const distance = levenshtein(target, String(option).toLowerCase());
-    if (distance < bestDistance) {
-      best = option;
-      bestDistance = distance;
-    }
-  }
-  const limit = Math.max(2, Math.floor(target.length / 3));
-  return bestDistance <= limit ? best : null;
-}
-var suggest = (word, options) => {
-  const match = closest(word, options);
-  return match === null ? void 0 : `Did you mean "${match}"?`;
-};
-function parseSelector(selector) {
-  const match = /^([A-Za-z_][\w-]*)(?:\.([a-z]+):(.+))?$/.exec(String(selector ?? ""));
-  return match ? { screen: match[1], part: match[2] ?? null, name: match[3] ?? null } : null;
-}
-var initials = (name) => String(name).split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
-function nameColor(name) {
-  let hue = 0;
-  for (const char of String(name)) hue = (hue * 31 + char.charCodeAt(0)) % 360;
-  return `hsl(${hue} 55% 50%)`;
-}
-function seeded(seed) {
-  let state = seed >>> 0;
-  return () => {
-    state = state + 1831565813 >>> 0;
-    let t = state;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-var isImageSource = (value) => typeof value === "string" && (/^https:\/\/[^\s"'<>]+$/i.test(value) || /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,[A-Za-z0-9+/=]+$/i.test(value) || /^[\w ./-]+\.(?:png|jpe?g|gif|webp|avif)$/i.test(value) && !value.startsWith("/") && !value.split("/").includes(".."));
 
 // src/surfaces/ai-chat.css
 var ai_chat_default = '/* ai-chat surface: an AI assistant app with connectors (warm, conversational look) */\n\n.cf-aichat {\n    --ai-bg: color-mix(in srgb, var(--cf-win) 90%, #efe3cf);\n    --ai-side: color-mix(in srgb, var(--cf-win-2) 82%, #e7dac3);\n    --ai-bubble: color-mix(in srgb, var(--cf-win-3) 72%, #e6dac6);\n    --ai-serif: "Tiempos Text", "Iowan Old Style", ui-serif, Georgia, Cambria, "Times New Roman", serif;\n\n    background: var(--ai-bg);\n}\n\n.cf-aichat .cf-appbar {\n    background: var(--ai-bg);\n    box-shadow: none;\n}\n\n.cf-ai-main {\n    display: flex;\n    flex: 1;\n    min-height: 0;\n}\n\n.cf-ai-side {\n    display: flex;\n    flex-direction: column;\n    width: 176px;\n    flex-shrink: 0;\n    padding: 12px 10px;\n    background: var(--ai-side);\n    border-right: 1px solid var(--cf-line);\n    font-size: 13px;\n}\n\n.cf-ai-new {\n    padding: 8px 10px;\n    border: 1px solid var(--cf-line-strong);\n    border-radius: 9px;\n    background: var(--cf-win);\n    font-weight: 650;\n}\n\n.cf-ai-label {\n    margin: 16px 6px 6px;\n    color: var(--cf-dim);\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n}\n\n.cf-ai-recent {\n    padding: 6px 8px;\n    overflow: hidden;\n    border-radius: 7px;\n    color: var(--cf-dim);\n    white-space: nowrap;\n    text-overflow: ellipsis;\n}\n\n.cf-ai-recent.cf-active {\n    background: var(--ai-bubble);\n    color: var(--cf-text);\n    font-weight: 600;\n}\n\n.cf-ai-user {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    margin-top: auto;\n    padding: 6px 4px 0;\n    font-weight: 600;\n}\n\n.cf-ai-user .cf-avatar {\n    width: 26px;\n    height: 26px;\n    border-radius: 50%;\n    font-size: 10px;\n}\n\n.cf-ai-pane {\n    position: relative;\n    display: flex;\n    flex: 1;\n    flex-direction: column;\n    min-width: 0;\n}\n\n.cf-ai-thread {\n    display: flex;\n    flex: 1;\n    flex-direction: column;\n    gap: 14px;\n    min-height: 0;\n    padding: 20px 26px 12px;\n    overflow: hidden;\n}\n\n.cf-ai-thread:has(.cf-ai-msg, .cf-ai-tool) {\n    mask-image: linear-gradient(to bottom, transparent 0, #000 28px);\n}\n\n.cf-ai-empty {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    gap: 14px;\n    flex: 1;\n    padding-bottom: 30px;\n}\n\n.cf-ai-empty .cf-appicon {\n    width: 40px;\n    height: 40px;\n    border-radius: 50%;\n    font-size: 13px;\n}\n\n.cf-ai-greet {\n    font-family: var(--ai-serif);\n    font-size: 30px;\n    letter-spacing: -0.01em;\n    text-align: center;\n}\n\n.cf-ai-user-msg {\n    align-self: flex-end;\n    max-width: 82%;\n    animation: cf-in 350ms ease;\n}\n\n.cf-ai-bubble {\n    padding: 10px 14px;\n    background: var(--ai-bubble);\n    border-radius: 14px;\n    font-size: 14.5px;\n    line-height: 1.5;\n    overflow-wrap: anywhere;\n}\n\n.cf-ai-thinking {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    color: var(--cf-dim);\n    font-size: 13.5px;\n    font-style: italic;\n}\n\n.cf-ai-spark {\n    color: var(--app);\n    font-style: normal;\n    animation: cf-ai-pulse 1s ease-in-out infinite;\n}\n\n@keyframes cf-ai-pulse {\n    50% { opacity: 0.35; transform: rotate(30deg); }\n}\n\n.cf-ai-tool {\n    padding: 9px 12px;\n    background: var(--cf-win);\n    border: 1px solid var(--cf-line);\n    border-radius: 10px;\n    font-size: 13px;\n    animation: cf-in 300ms ease;\n}\n\n.cf-ai-tool-head {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n}\n\n.cf-ai-tool-head .cf-appicon,\n.cf-ai-chip .cf-appicon,\n.cf-ai-conn .cf-appicon {\n    width: 20px;\n    height: 20px;\n    border-radius: 6px;\n    font-size: 8.5px;\n}\n\n.cf-ai-tool-name {\n    flex: 1;\n    min-width: 0;\n    overflow: hidden;\n    font-family: var(--cf-font-mono);\n    font-size: 12.5px;\n    white-space: nowrap;\n    text-overflow: ellipsis;\n}\n\n.cf-ai-tool-name b {\n    font-family: var(--cf-font-ui);\n}\n\n.cf-ai-tool-status {\n    width: 14px;\n    height: 14px;\n    flex-shrink: 0;\n}\n\n.cf-ai-tool.cf-running .cf-ai-tool-status {\n    border: 2px solid var(--cf-line-strong);\n    border-top-color: var(--app);\n    border-radius: 50%;\n    animation: cf-ai-spin 800ms linear infinite;\n}\n\n.cf-ai-tool.cf-ok .cf-ai-tool-status::before {\n    content: "\u2713";\n    color: var(--cf-ok);\n    font-weight: 800;\n}\n\n@keyframes cf-ai-spin {\n    to { transform: rotate(360deg); }\n}\n\n.cf-ai-tool-input {\n    margin-top: 5px;\n    overflow: hidden;\n    color: var(--cf-dim);\n    font-family: var(--cf-font-mono);\n    font-size: 11.5px;\n    white-space: nowrap;\n    text-overflow: ellipsis;\n}\n\n.cf-ai-tool-result:empty {\n    display: none;\n}\n\n.cf-ai-tool-result {\n    margin-top: 5px;\n    font-size: 13px;\n    font-weight: 600;\n}\n\n.cf-ai-reply {\n    display: grid;\n    grid-template-columns: 28px minmax(0, 1fr);\n    gap: 12px;\n    animation: cf-in 400ms ease;\n}\n\n.cf-ai-mark .cf-appicon {\n    width: 26px;\n    height: 26px;\n    border-radius: 50%;\n    font-size: 9px;\n}\n\n.cf-ai-prose {\n    font-family: var(--ai-serif);\n    font-size: 15.5px;\n    line-height: 1.6;\n    overflow-wrap: anywhere;\n}\n\n.cf-ai-prose p {\n    margin: 0 0 8px;\n}\n\n.cf-ai-prose ul {\n    margin: 0 0 8px;\n    padding-left: 20px;\n}\n\n.cf-ai-prose li {\n    margin: 2px 0;\n}\n\n.cf-ai-prose code {\n    font-family: var(--cf-font-mono);\n    font-size: 0.85em;\n}\n\n.cf-ai-composer {\n    position: relative;\n    flex-shrink: 0;\n    margin: 6px 22px 18px;\n    padding: 12px 14px 10px;\n    background: var(--cf-win);\n    border: 1px solid var(--cf-line-strong);\n    border-radius: 18px;\n    box-shadow: 0 6px 20px rgb(0 0 0 / 0.07);\n    transition: border-color 200ms ease;\n}\n\n.cf-ai-composer.cf-typing {\n    border-color: var(--app);\n}\n\n.cf-ai-input {\n    min-height: 40px;\n    font-size: 14.5px;\n    line-height: 1.45;\n}\n\n.cf-ai-placeholder {\n    color: var(--cf-faint);\n}\n\n.cf-ai-composer.cf-typing .cf-ai-placeholder,\n.cf-ai-typed:not(:empty) ~ .cf-ai-placeholder {\n    display: none;\n}\n\n.cf-ai-bar {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    margin-top: 6px;\n    font-size: 12.5px;\n}\n\n.cf-ai-plus {\n    display: grid;\n    place-items: center;\n    width: 26px;\n    height: 26px;\n    border: 1px solid var(--cf-line-strong);\n    border-radius: 50%;\n    color: var(--cf-dim);\n}\n\n.cf-ai-tools,\n.cf-ai-chip {\n    display: inline-flex;\n    align-items: center;\n    gap: 5px;\n    padding: 4px 9px;\n    border: 1px solid var(--cf-line-strong);\n    border-radius: 999px;\n    color: var(--cf-dim);\n    white-space: nowrap;\n}\n\n.cf-ai-chips {\n    display: flex;\n    gap: 6px;\n    min-width: 0;\n    overflow: hidden;\n}\n\n.cf-ai-chip {\n    padding: 3px 9px 3px 4px;\n    color: var(--cf-text);\n    font-weight: 600;\n}\n\n.cf-ai-model {\n    margin-left: auto;\n    color: var(--cf-dim);\n    white-space: nowrap;\n}\n\n.cf-ai-send {\n    display: grid;\n    place-items: center;\n    width: 30px;\n    height: 30px;\n    flex-shrink: 0;\n    border-radius: 9px;\n    background: var(--app);\n    color: #fff;\n    font-weight: 800;\n}\n\n.cf-ai-menu {\n    position: absolute;\n    left: 12px;\n    bottom: calc(100% + 8px);\n    z-index: 5;\n    width: 270px;\n    padding: 8px;\n    background: var(--cf-win);\n    border: 1px solid var(--cf-line-strong);\n    border-radius: 12px;\n    box-shadow: var(--cf-shadow);\n    opacity: 0;\n    transform: translateY(6px);\n    pointer-events: none;\n    transition: opacity 200ms ease, transform 200ms ease;\n}\n\n.cf-ai-menu.cf-open {\n    opacity: 1;\n    transform: none;\n}\n\n.cf-ai-menu-label {\n    margin: 2px 6px 6px;\n    color: var(--cf-dim);\n    font-size: 11px;\n    font-weight: 700;\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n}\n\n.cf-ai-conn {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    padding: 7px 8px;\n    border-radius: 8px;\n    font-size: 13.5px;\n}\n\n.cf-ai-conn-name {\n    flex: 1;\n}\n\n.cf-ai-conn .cf-switch {\n    position: relative;\n    width: 30px;\n    height: 18px;\n    border-radius: 999px;\n    background: var(--cf-line-strong);\n    transition: background 200ms ease;\n}\n\n.cf-ai-conn .cf-switch i {\n    position: absolute;\n    top: 2px;\n    left: 2px;\n    width: 14px;\n    height: 14px;\n    border-radius: 50%;\n    background: #fff;\n    transition: left 200ms ease;\n}\n\n.cf-ai-conn .cf-switch.cf-on {\n    background: var(--app);\n}\n\n.cf-ai-conn .cf-switch.cf-on i {\n    left: 14px;\n}\n\n/* ---------- typing caret ---------- */\n\n.cf-ai-caret {\n    display: none;\n    width: 2px;\n    height: 1.15em;\n    margin: 0 1px -0.2em;\n    background: var(--cf-text);\n    animation: cf-ai-blink 1s steps(1) infinite;\n}\n\n.cf-ai-composer.cf-typing .cf-ai-caret {\n    display: inline-block;\n}\n\n@keyframes cf-ai-blink {\n    50% { opacity: 0; }\n}\n\n/* ---------- file references ---------- */\n\n.cf-file-icon {\n    display: inline-grid;\n    place-items: center;\n    flex-shrink: 0;\n    width: 20px;\n    height: 20px;\n    border-radius: 6px;\n    background: var(--file);\n    color: #fff;\n}\n\n.cf-file-icon svg {\n    fill: none;\n    stroke: currentColor;\n    stroke-width: 2.2;\n    stroke-linecap: round;\n}\n\n.cf-ai-ref {\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    margin: 0 1px;\n    padding: 0 6px 0 3px;\n    background: var(--cf-ref-bg);\n    border-radius: 6px;\n    color: var(--cf-ref-text);\n    font-weight: 600;\n    white-space: nowrap;\n    animation: cf-in 260ms ease;\n    transition: box-shadow 160ms ease;\n}\n\n.cf-ai-ref .cf-file-icon {\n    width: 16px;\n    height: 16px;\n    border-radius: 4px;\n}\n\n.cf-ai-ref .cf-file-icon svg {\n    width: 11px;\n    height: 11px;\n}\n\n.cf-ai-ref.cf-hover {\n    box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--cf-ref-text) 65%, transparent);\n}\n\n.cf-ai-picker {\n    width: 330px;\n}\n\n.cf-ai-pick {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    padding: 7px 8px;\n    border-radius: 8px;\n    font-size: 13.5px;\n}\n\n.cf-ai-pick[hidden] {\n    display: none;\n}\n\n.cf-ai-pick.cf-active {\n    background: var(--cf-win-3);\n}\n\n.cf-ai-pick-name,\n.cf-ai-peek-name {\n    flex: 1;\n    min-width: 0;\n    overflow: hidden;\n    font-weight: 600;\n    white-space: nowrap;\n    text-overflow: ellipsis;\n}\n\n.cf-ai-pick-meta,\n.cf-ai-peek-meta {\n    color: var(--cf-dim);\n    font-size: 12px;\n    white-space: nowrap;\n}\n\n/* hover preview: pops up beside the reference */\n.cf-ai-peek {\n    position: absolute;\n    top: 0;\n    left: 0;\n    z-index: 6;\n    width: 252px;\n    padding: 8px;\n    background: var(--cf-win);\n    border: 1px solid var(--cf-line-strong);\n    border-radius: 14px;\n    box-shadow: var(--cf-shadow);\n    opacity: 0;\n    transform: translateY(6px) scale(0.9);\n    pointer-events: none;\n    transition: opacity 160ms ease, transform 320ms cubic-bezier(0.2, 1.45, 0.4, 1);\n}\n\n.cf-ai-peek.cf-open {\n    opacity: 1;\n    transform: none;\n}\n\n.cf-ai-thumb {\n    overflow: hidden;\n    aspect-ratio: 240 / 140;\n    background: #fff;\n    border-radius: 9px;\n}\n\n.cf-thumb-img {\n    display: block;\n    width: 100%;\n    height: 100%;\n    object-fit: cover;\n}\n\n.cf-thumb-art {\n    display: block;\n    width: 100%;\n    height: 100%;\n}\n\n.cf-ai-peek-info {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    padding: 8px 4px 2px;\n    font-size: 13px;\n}\n\n.cf-thumb-title { font: 700 12px var(--cf-font-ui); fill: #111827; }\n.cf-thumb-line { font: 500 9.5px var(--cf-font-ui); fill: #4b5563; }\n.cf-thumb-head { font: 700 9.5px var(--cf-font-ui); fill: #14532d; }\n.cf-thumb-cell { font: 500 9.5px var(--cf-font-ui); fill: #374151; }\n.cf-thumb-tag { font: 800 8px var(--cf-font-ui); fill: #fff; text-anchor: middle; }\n\n/* ---------- neutral look: a plain, grey, sans-serif assistant ---------- */\n\n.cf-aichat.cf-ai-neutral {\n    --cf-win: var(--cf-n-bg);\n    --cf-win-2: var(--cf-n-side);\n    --cf-win-3: var(--cf-n-raise);\n    --cf-line: var(--cf-n-line);\n    --cf-line-strong: var(--cf-n-line-strong);\n    --cf-text: var(--cf-n-text);\n    --cf-dim: var(--cf-n-dim);\n    --cf-faint: var(--cf-n-faint);\n    --ai-bg: var(--cf-n-bg);\n    --ai-side: var(--cf-n-side);\n    --ai-bubble: var(--cf-n-raise);\n    --ai-serif: var(--cf-font-ui);\n\n    color: var(--cf-text);\n}\n\n.cf-ai-neutral .cf-ai-side {\n    border-right: 0;\n}\n\n.cf-ai-neutral .cf-ai-new {\n    background: transparent;\n    border-color: transparent;\n}\n\n.cf-ai-neutral .cf-ai-label {\n    letter-spacing: 0;\n    text-transform: none;\n    font-size: 12px;\n    font-weight: 600;\n}\n\n.cf-ai-neutral .cf-ai-empty .cf-ai-mark,\n.cf-ai-neutral .cf-ai-reply .cf-ai-mark {\n    display: none;\n}\n\n.cf-ai-neutral .cf-ai-greet {\n    font-size: 27px;\n    font-weight: 500;\n    letter-spacing: -0.015em;\n}\n\n.cf-ai-neutral .cf-ai-bubble {\n    padding: 10px 16px;\n    border-radius: 20px;\n}\n\n.cf-ai-neutral .cf-ai-reply {\n    grid-template-columns: minmax(0, 1fr);\n}\n\n.cf-ai-neutral .cf-ai-prose {\n    font-size: 15px;\n    line-height: 1.65;\n}\n\n.cf-ai-neutral .cf-ai-composer {\n    background: var(--cf-n-composer);\n    border-color: var(--cf-n-line);\n    border-radius: 26px;\n    box-shadow: 0 8px 28px rgb(0 0 0 / 0.12);\n}\n\n.cf-ai-neutral .cf-ai-composer.cf-typing {\n    border-color: var(--cf-n-line-strong);\n}\n\n.cf-ai-neutral .cf-ai-plus,\n.cf-ai-neutral .cf-ai-tools {\n    border-color: transparent;\n}\n\n.cf-ai-neutral .cf-ai-send {\n    border-radius: 50%;\n    background: var(--cf-text);\n    color: var(--cf-win);\n}\n\n.cf-ai-neutral .cf-ai-menu {\n    background: var(--cf-n-menu);\n}\n\n.cf-ai-neutral .cf-ai-tool {\n    background: transparent;\n}\n\n.cf-ai-neutral .cf-ai-spark {\n    color: var(--cf-dim);\n}\n';
@@ -5032,7 +5083,7 @@ var player_default = `/* cueflick player \u2014 lives inside the <cue-flick> sha
 `;
 
 // src/core/constants.js
-var VERSION = true ? "0.3.0" : "0.0.0-dev";
+var VERSION = true ? "0.3.1" : "0.0.0-dev";
 var STOP = /* @__PURE__ */ Symbol("cueflick.stop");
 var WORLD = Object.freeze({ width: 1600, height: 900 });
 
@@ -5923,55 +5974,6 @@ var Links = class _Links {
   }
 };
 
-// src/core/steps.js
-var GENERIC_ACTIONS = ["focus", "pan", "dive", "blur", "caption", "wait", "packet", "enter", "exit", "front", "spawn", "move", "leave", "confetti", "backdrop"];
-var MOTION_KEYS = ["duration", "ease"];
-var GENERIC_KEYS = {
-  focus: ["zoom", ...MOTION_KEYS, "async"],
-  pan: [...MOTION_KEYS, "async"],
-  dive: [...MOTION_KEYS, "into"],
-  blur: ["amount"],
-  caption: [],
-  wait: [],
-  packet: [],
-  enter: ["from", ...MOTION_KEYS],
-  exit: ["to", ...MOTION_KEYS],
-  front: ["dim"],
-  spawn: ["at", "perch", "offset", "effect", "stagger", "bounces", "bounciness"],
-  move: ["to", "perch", "offset", "path", "height", "bounces", "bounciness", ...MOTION_KEYS, "async"],
-  leave: ["effect"],
-  confetti: ["count", "colors", "power"],
-  backdrop: []
-};
-var SURFACE_STEP_KEYS = ["on", "punch"];
-var DIRECTIONS = ["left", "right", "top", "bottom", "fade", "zoom", "pop", "drop", "launch", "minimize", "flip"];
-var SCREEN_ACTIONS = ["enter", "exit", "front"];
-function actionOf(step, surfaceActions) {
-  return Object.keys(step).find((key) => GENERIC_ACTIONS.includes(key) || surfaceActions.has(key)) ?? null;
-}
-function resolveStepScreen(step, action, screens) {
-  const keys = Object.keys(screens);
-  const owners = keys.filter((key) => hasOwn(screens[key].surface.actions, action));
-  const selector = typeof step[action] === "string" ? parseSelector(step[action]) : null;
-  const selected = selector && hasOwn(screens, selector.screen) && selector.part ? selector.screen : null;
-  if (step.on !== void 0) {
-    if (typeof step.on !== "string") return { error: '"on" names the screen this step runs on, so it must be a screen id.', path: "on" };
-    if (!hasOwn(screens, step.on)) return { error: `screen "${step.on}" is not defined.`, path: "on", candidates: keys };
-    if (!hasOwn(screens[step.on].surface.actions, action)) return { error: `"${action}" can't run on "${step.on}".`, path: "on" };
-    if (selected && selected !== step.on) {
-      return { error: `"on": "${step.on}" disagrees with the target's screen "${selected}"; remove "on" or fix the target.`, path: "on" };
-    }
-    return { key: step.on };
-  }
-  if (selected) {
-    if (!hasOwn(screens[selected].surface.actions, action)) return { error: `"${action}" doesn't work on "${selected}"; check the target.` };
-    return { key: selected };
-  }
-  if (owners.length === 1) return { key: owners[0] };
-  if (owners.length === 0) return { error: `"${action}" needs a screen that supports it, and this clip has none.` };
-  return { error: `"${action}" could apply to ${owners.join(" or ")}; add "on": "<screen>".` };
-}
-
 // src/core/player.js
 var INTRO_MS = 3e3;
 var CHAPTER_SETTLE_MS = 300;
@@ -6648,6 +6650,7 @@ var APP_KEYS = ["name", "color", "icon"];
 var SCREEN_COMMON_KEYS = ["surface", "app", "hidden", "place", "width", "mode"];
 var SCREEN_MODES = ["light", "dark"];
 var FONT_PATTERN = /^[\w\s,'"-]+$/;
+var CUSTOM_HINT = "If you made it, register it before the clip is checked: on a page, import its module first; with the CLI, add --use <its file>.";
 var Report = class {
   constructor() {
     this.errors = [];
@@ -6899,7 +6902,7 @@ function checkScreens(report, screens) {
     }
     const surface = getSurface(screen.surface);
     if (!surface) {
-      report.error(`${path}.surface`, `"${screen.surface}" is not a known surface. Known: ${surfaceNames().join(", ")}.`, suggest(screen.surface, surfaceNames()));
+      report.error(`${path}.surface`, `"${screen.surface}" is not a known surface. Known: ${surfaceNames().join(", ")}.`, suggest(screen.surface, surfaceNames()) ?? CUSTOM_HINT);
       continue;
     }
     checkApp(report, screen.app, `${path}.app`);
@@ -7146,7 +7149,7 @@ function validateClip(clip2) {
   checkDesign(report, clip2.design);
   const template = typeof clip2.template === "string" ? getTemplate(clip2.template) : void 0;
   if (!template) {
-    report.error("template", `"${clip2.template}" is not a known template. Known: ${templateNames().join(", ")}.`, suggest(clip2.template, templateNames()));
+    report.error("template", `"${clip2.template}" is not a known template. Known: ${templateNames().join(", ")}.`, suggest(clip2.template, templateNames()) ?? CUSTOM_HINT);
   }
   const screens = checkScreens(report, clip2.screens);
   if (template) {
