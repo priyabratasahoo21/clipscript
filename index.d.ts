@@ -300,7 +300,7 @@ export type Step =
     | { ask: string; ms?: number; on?: string }
     | { summarize: string; title?: string; ms?: number; on?: string }
     | { pool: 'idle' | 'music' | 'iris'; title?: string; artist?: string; art?: string[]; expand?: boolean; ms?: number; on?: string }
-    | { toggle: Target; on?: boolean }
+    | { toggle: Target; to?: boolean; on?: string }
     | { tap: Target; on?: string }
     | { think: number; on?: string }
     | { tool: string; connector?: string; input?: Record<string, unknown>; result?: string; ms?: number; on?: string }
@@ -375,7 +375,10 @@ export interface MountOptions {
 }
 
 export declare class Player {
-    constructor(host: HTMLElement, mount: HTMLElement, clip: Clip, options?: Omit<MountOptions, 'tagName'>);
+    constructor(host: HTMLElement, mount: HTMLElement, clip: Clip, options?: Omit<MountOptions, 'tagName'> & {
+        /** The clip's URL; relative image paths in the clip resolve against it. */
+        base?: string;
+    });
     readonly state: PlayerState;
     /** Index of the chapter whose static view has finished drawing, or null. */
     readonly readyChapter: number | null;
@@ -475,7 +478,7 @@ export interface SurfaceDefinition {
     styles?: string;
     parts?: Record<string, (def: Record<string, unknown>) => string[]>;
     validate?(def: Record<string, unknown>, path: string, report: Report, screens: Record<string, Screen>): void;
-    render(def: Record<string, unknown>, context: { screens: Record<string, Screen>; accent: string }): SurfaceView;
+    render(def: Record<string, unknown>, context: { screens: Record<string, Screen>; accent: string; base?: string }): SurfaceView;
     mounted?(view: SurfaceView): void;
     /** Called after a resize or when the screen enters the stage. */
     relayout?(view: SurfaceView): void;

@@ -49,11 +49,12 @@ before(async () => {
         screen: 'list',
         list: { title: 'Family', circles: ['#ffc83d', '#ff6b5e'], sections: [{ title: 'Iris', rows: [
             { id: 'summaries', label: 'Summarise notifications', toggle: false },
+            { id: 'alerts', label: 'Alerts', toggle: true },
             { id: 'sunny', label: 'Sunny', detail: 'Age 7', color: '#ffc83d', chevron: true }
         ] }] }
     });
     listed.chapters = [{ title: 'List', narration: 'A list.', focus: 'phone', steps: [
-        { toggle: 'phone.row:summaries' }, { tap: 'phone.row:sunny' }, { blur: 'phone', amount: 8 }, { dive: 'phone.row:sunny' }
+        { toggle: 'phone.row:summaries' }, { toggle: 'phone.row:alerts', to: false }, { tap: 'phone.row:sunny' }, { blur: 'phone', amount: 8 }, { dive: 'phone.row:sunny' }
     ] }, { title: 'After', narration: 'Then the film carries on.', steps: [{ wait: 100 }] }];
     await serve('irisList', listed);
     const pictured = structuredClone(clips.gossipt);
@@ -74,6 +75,19 @@ before(async () => {
             { spawn: ['ball', 'block'] },
             { move: 'ball', to: 'block', perch: true, path: 'bounce', bounces: 2, duration: 900 },
             { wait: 600 }
+        ] }]
+    });
+    // a bounce with no height: nothing to rebound from, and the film must still finish
+    await serve('flatBounce', {
+        cueflick: '1', title: 'Flat bounce', template: 'phone-feature', layout: 'stage',
+        story: { overview: 'A ball bounces without leaving the ground.' },
+        design: { intro: false, endcard: false, cursor: false, backdrop: '#f1f0f5' },
+        screens: { phone: { surface: 'phone', app: { name: 'Iris' }, hidden: true } },
+        actors: { ball: { shape: 'sphere', color: '#ff6b5e', size: 140, at: { x: 560, y: 450 } } },
+        chapters: [{ title: 'Flat', narration: 'Flat.', steps: [
+            { spawn: 'ball' },
+            { move: 'ball', to: { x: 1000, y: 450 }, path: 'bounce', height: 0, duration: 400 },
+            { wait: 100 }
         ] }]
     });
     // zoomed far in on the composer, with and without the camera following the typing
@@ -560,13 +574,14 @@ test('a list screen toggles and taps; blur keeps one subject sharp; a dive fills
             const row = root.querySelector('[data-row=sunny]').getBoundingClientRect();
             return {
                 switchOn: root.querySelector('[data-row=summaries] .cf-ph-toggle').classList.contains('cf-on'),
+                switchOff: !root.querySelector('[data-row=alerts] .cf-ph-toggle').classList.contains('cf-on'),
                 phoneSharp: !root.querySelector('[data-screen=phone]').classList.contains('cf-blurred'),
                 spheresBlurred: [...root.querySelectorAll('.cf-actor')].every(el => el.classList.contains('cf-blurred')),
                 // the dived-into row covers the whole stage
                 covers: row.left <= stage.left && row.right >= stage.right && row.top <= stage.top && row.bottom >= stage.bottom
             };
         });
-        assert.deepEqual(state, { switchOn: true, phoneSharp: true, spheresBlurred: true, covers: true });
+        assert.deepEqual(state, { switchOn: true, switchOff: true, phoneSharp: true, spheresBlurred: true, covers: true });
         assert.deepEqual(errors, []);
     } finally {
         await browser.close();
@@ -583,11 +598,77 @@ test('a file preview can show a real image from the clip folder, and nothing out
             const card = view.peek(view.files.get('q3-chart'), view.find('file', 'q3-chart'));
             const img = card.querySelector('img.cf-thumb-img');
             await img.decode();
-            return { src: img.getAttribute('src'), width: img.naturalWidth };
+            return { path: new URL(img.src).pathname, width: img.naturalWidth };
         });
-        assert.deepEqual(image, { src: 'pixel.png', width: 1 });
+        assert.deepEqual(image, { path: '/pixel.png', width: 1 });
         const outside = await page.evaluate(async () => (await fetch('/%2e%2e/outside.png')).status);
         assert.ok([403, 404].includes(outside), `a path outside the clip folder must not be served (got ${outside})`);
+        assert.deepEqual(errors, []);
+    } finally {
+        await browser.close();
+    }
+});
+
+test('a bounce with no height still lands, and the film plays on to the end', { skip: !playwright }, async () => {
+    const browser = await playwright.chromium.launch();
+    try {
+        const { page, errors } = await openPage(browser, `${servers.flatBounce.url}/`);
+        await page.waitForFunction(() => document.querySelector('cue-flick')?.player?.state === 'ended', null, { timeout: 15000 });
+        assert.deepEqual(errors, []);
+    } finally {
+        await browser.close();
+    }
+});
+
+test('an image path in a clip resolves against the clip, not the page that embeds it', { skip: !playwright }, async () => {
+    const browser = await playwright.chromium.launch();
+    try {
+        const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+        const errors = [];
+        page.on('pageerror', error => errors.push(error.message));
+        const { url } = servers.gossiptPicture;
+        // a page two folders down; the clip and its image sit at the root
+        await page.route(`${url}/pages/demo/`, route => route.fulfill({
+            contentType: 'text/html',
+            body: '<!doctype html><script src="/__cueflick/cueflick.min.js"></script><cue-flick src="../../clip.json" chapter="0" controls="none"></cue-flick>'
+        }));
+        await page.goto(`${url}/pages/demo/`);
+        await ready(page, 0);
+        const image = await page.evaluate(async () => {
+            const { view } = document.querySelector('cue-flick').player.views.chat;
+            const img = view.peek(view.files.get('q3-chart'), view.find('file', 'q3-chart')).querySelector('img.cf-thumb-img');
+            await img.decode();
+            return { path: new URL(img.src).pathname, width: img.naturalWidth };
+        });
+        assert.deepEqual(image, { path: '/pixel.png', width: 1 });
+        assert.deepEqual(errors, []);
+    } finally {
+        await browser.close();
+    }
+});
+
+test('following steps on rows that are about to appear keeps the camera on the window, not the world\'s corner', { skip: !playwright }, async () => {
+    const browser = await playwright.chromium.launch();
+    try {
+        const { page, errors } = await openPage(browser, `${servers.clawFx.url}/?chapter=0`, { viewport: { width: 1280, height: 720 } });
+        await ready(page, 0);
+        // a row that isn't showing yet has no position of its own, so targeting it frames its screen
+        assert.equal(await page.evaluate(() => document.querySelector('cue-flick').player.targetRect('books.row:1042').kind), 'screen');
+        await page.evaluate(() => document.querySelector('cue-flick').goTo(3));
+        const centres = await page.evaluate(async () => {
+            const player = document.querySelector('cue-flick').player;
+            const out = [];
+            // Fastbooks launches, Claw minimizes, then three rows are added (before the click on a row)
+            for (let t = 0; t < 4400; t += 100) {
+                const { x, y, scale } = player.camera.current;
+                const books = player.views.books.rect;
+                out.push([(x + (books.x + books.w / 2) * scale) / player.stage.clientWidth, (y + (books.y + books.h / 2) * scale) / player.stage.clientHeight]);
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return out;
+        });
+        const strays = centres.filter(([cx, cy]) => cx < 0.3 || cx > 0.7 || cy < 0.2 || cy > 0.7);
+        assert.deepEqual(strays, [], 'the Fastbooks window stays in frame while its rows appear');
         assert.deepEqual(errors, []);
     } finally {
         await browser.close();

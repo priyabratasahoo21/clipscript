@@ -192,18 +192,20 @@ export class Actors {
 
     /**
      * Rebound after landing: `count` times, each `share` as high as the last, squashing less each
-     * time. Flight time goes with √height, measured against a reference flight.
+     * time. Flight time goes with √height, measured against a reference flight. A flat landing
+     * (no height) has nothing to rebound from, so it only squashes.
      */
     async rebound(actor, ctx, take, { count, share, height, reference, pieces = actor.pieces }) {
         let impact = 1;
         let rise = height;
-        for (let i = 0; i < count; i++) {
+        const times = height > 0 && reference.height > 0 ? count : 0;
+        for (let i = 0; i < times; i++) {
             if (!await this.squash(actor, ctx, take, { amount: impact, settle: BOUNCE_SETTLE_MS, pieces })) return;
             rise *= share;
             if (!await this.arc(actor, ctx, take, { ms: reference.ms * Math.sqrt(rise / reference.height), arc: rise, pieces })) return;
             impact *= 0.6;
         }
-        await this.squash(actor, ctx, take, { amount: count ? impact : 1, pieces });
+        await this.squash(actor, ctx, take, { amount: times ? impact : 1, pieces });
     }
 
     async spawn(actor, ctx, { at, effect = 'pop', stagger = 90, bounces, bounciness } = {}) {

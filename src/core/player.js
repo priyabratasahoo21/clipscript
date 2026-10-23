@@ -11,7 +11,7 @@ import { Camera } from './camera.js';
 import { STOP, WORLD } from './constants.js';
 import { Cursor } from './cursor.js';
 import { applyDesign, DEFAULT_PUNCH, LIMITS, MODES, resolveBackdrop, resolveDesign, resolveDuration } from './design.js';
-import { h, rectIn } from './dom.js';
+import { h, isShown, rectIn } from './dom.js';
 import { Links } from './links.js';
 import { getSurface, getTemplate } from './registry.js';
 import { actionOf, GENERIC_ACTIONS, resolveStepScreen } from './steps.js';
@@ -101,7 +101,8 @@ export class Player {
      * @param {HTMLElement} host   element that receives events (the <cue-flick> element)
      * @param {HTMLElement} mount  container to render into (inside the shadow root)
      * @param {object} clip        a clip that passed validateClip()
-     * @param {object} [options]   autoplay ('view' | 'none'), controls, chapter, mode, endcard, reducedMotion
+     * @param {object} [options]   autoplay ('view' | 'none'), controls, chapter, mode, endcard, reducedMotion,
+     *                             base (the clip's URL, which relative image paths resolve against)
      */
     constructor(host, mount, clip, options = {}) {
         this.host = host;
@@ -240,7 +241,7 @@ export class Player {
         this.views = Object.create(null);
         this.zTop = 0;
         for (const { key, def, surface } of entries) {
-            const view = surface.render(def, { screens: this.clip.screens, accent: this.design.accent });
+            const view = surface.render(def, { screens: this.clip.screens, accent: this.design.accent, base: this.options.base });
             const rect = layout[key];
             view.el.classList.add('cf-screen');
             view.el.classList.toggle('cf-off', def.hidden === true);
@@ -286,7 +287,8 @@ export class Player {
         const entry = this.views[parsed.screen];
         if (!parsed.part) return { ...entry.rect, kind: 'screen' };
         const el = entry.view.find(parsed.part, parsed.name);
-        return el ? { ...rectIn(this.world, el), kind: 'part' } : { ...entry.rect, kind: 'screen' };
+        // a part that isn't showing yet (a row before it's added) has no position: frame its screen
+        return el && isShown(el) ? { ...rectIn(this.world, el), kind: 'part' } : { ...entry.rect, kind: 'screen' };
     }
 
     onResize() {
@@ -558,10 +560,10 @@ export class Player {
      */
     cameraFor(ctx) {
         return {
-            look: (el, options) => this.camera.look(rectIn(this.world, el), { ctx, ...options }),
+            look: (el, options) => (isShown(el) ? this.camera.look(rectIn(this.world, el), { ctx, ...options }) : Promise.resolve()),
             back: options => this.camera.back({ ctx, ...options }),
             track: (el, within) => {
-                if (!this.design.camera.follow) return;
+                if (!this.design.camera.follow || !isShown(el)) return;
                 this.alongside(this.camera.track(rectIn(this.world, el), ctx, within ? rectIn(this.world, within) : undefined), true);
             }
         };
@@ -579,7 +581,8 @@ export class Player {
     /** Follow mode: ease the camera toward what this step acts on, alongside the step. */
     followStep(entry, spec, step, name, ctx) {
         const el = (name && spec.part ? entry.view.find(spec.part, name) : null) ?? spec.follow?.(entry.view, step) ?? null;
-        if (!el) return;
+        // nothing to follow until it shows (a row that an "add" step is about to reveal)
+        if (!el || !isShown(el)) return;
         this.alongside(this.camera.follow({ ...rectIn(this.world, el), kind: FOLLOW_TRAIL }, ctx), true);
     }
 

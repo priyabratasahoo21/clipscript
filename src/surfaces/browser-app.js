@@ -64,8 +64,8 @@ function validateApp(def, path, report) {
     });
 }
 
-const rowIds = def => (Array.isArray(def.rows) ? def.rows.map(row => row.id) : []);
-const rowById = (def, id) => def.rows.find(row => row.id === id);
+const rowIds = def => (Array.isArray(def.rows) ? def.rows.filter(isObject).map(row => row.id) : []);
+const rowById = (def, id) => def.rows.find(row => isObject(row) && row.id === id);
 
 function statusPill(status, tone) {
     return h('span', { class: `cf-pill cf-tone-${tone ?? toneOf(status)}`, text: status });

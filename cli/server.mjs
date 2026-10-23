@@ -4,7 +4,7 @@
 // folders (demo mode), and never lists directories.
 
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, realpath, stat } from 'node:fs/promises';
 import { watch } from 'node:fs';
 import { basename, dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,6 +43,9 @@ function send(res, status, body, type = 'text/plain; charset=utf-8') {
     res.writeHead(status, { 'Content-Type': type, ...SECURITY_HEADERS });
     res.end(body);
 }
+
+/** True when `path` is inside `folder` (both absolute, symlinks already resolved). */
+export const isInside = (path, folder) => path.startsWith(folder.endsWith(sep) ? folder : folder + sep);
 
 /** Reject requests whose Host isn't this machine (blocks DNS-rebinding pages). */
 function isLocalHost(req) {
@@ -120,7 +123,10 @@ export async function startPreviewServer(clipFile, { port = 4321, reload = true,
             if (IMAGE_TYPES.has(extname(pathname).toLowerCase())) {
                 const image = resolve(clipDir, `.${decodeURIComponent(pathname)}`);
                 if (!image.startsWith(clipDir + sep)) return send(res, 403, 'Forbidden');
-                return send(res, 200, await readFile(image), TYPES[extname(image).toLowerCase()]);
+                // check where the file really is, so a symlink can't reach outside the folder
+                const real = await realpath(image);
+                if (!isInside(real, await realpath(clipDir))) return send(res, 403, 'Forbidden');
+                return send(res, 200, await readFile(real), TYPES[extname(image).toLowerCase()]);
             }
             if (pathname === '/__events' && reload) {
                 res.writeHead(200, { 'Content-Type': 'text/event-stream', ...SECURITY_HEADERS });

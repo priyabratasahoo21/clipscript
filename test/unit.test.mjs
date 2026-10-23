@@ -98,3 +98,85 @@ test('spring overshoots and settles; snappy front-loads the motion', () => {
     assert.equal(EASES.linear(0.42), 0.42);
 });
 
+
+// ---------- camera state, timing, and rebounds (DOM-free internals) ----------
+
+const { Camera } = await import('../src/core/camera.js');
+const { Timeline } = await import('../src/core/timeline.js');
+const { Actors } = await import('../src/core/actors.js');
+
+const RECTS = { a: { x: 100, y: 100, w: 600, h: 600, kind: 'screen' }, far: { x: 1450, y: 800, w: 40, h: 40 } };
+
+function testCamera() {
+    const stage = { clientWidth: 1280, clientHeight: 720 };
+    const camera = new Camera(stage, { style: { setProperty() {} } }, target => RECTS[target] ?? null, { maxZoom: 1.35, speed: 1 });
+    return { stage, camera };
+}
+
+/** A step context whose animations finish at once; `onWait` runs on every wait (e.g. to interrupt a hold). */
+const instantCtx = (onWait = () => {}) => ({
+    fast: false,
+    animate: async (_ms, onFrame) => onFrame?.(1),
+    wait: async () => onWait()
+});
+
+/** The world point in the centre of the stage (horizontally). */
+const centreOf = (camera, stage) => ({ x: (stage.clientWidth / 2 - camera.current.x) / camera.current.scale });
+
+test('a camera move during a punch-in hold ends the punch, so the next click punches in again', async () => {
+    const { camera } = testCamera();
+    await camera.focus('a', { instant: true });
+    let interrupted = false;
+    const ctx = instantCtx(() => {
+        if (interrupted) return;
+        interrupted = true;
+        camera.follow(RECTS.far, ctx);
+    });
+    await camera.punchAt({ x: 400, y: 400 }, ctx, { amount: 1.25, hold: 200 });
+    assert.ok(interrupted);
+    assert.equal(camera.punchState, null, 'the abandoned punch is cleared');
+    const before = camera.moveId;
+    await camera.punchAt({ x: 400, y: 400 }, instantCtx(), { amount: 1.25, hold: 80 });
+    assert.ok(camera.moveId > before, 'the next click punches in');
+});
+
+test('a pan survives a resize and a punch-in, until the next focus', async () => {
+    const { stage, camera } = testCamera();
+    await camera.focus('a', { instant: true });
+    await camera.pan({ x: 300 }, { instant: true });
+    const panned = centreOf(camera, stage);
+    const zoom = camera.current.scale / stage.clientWidth;
+    Object.assign(stage, { clientWidth: 640, clientHeight: 360 });
+    camera.apply();
+    assert.ok(Math.abs(centreOf(camera, stage).x - panned.x) < 0.01, 'the resize keeps the pan');
+    assert.ok(Math.abs(camera.current.scale / stage.clientWidth - zoom) < 1e-9, 'and its zoom');
+    const before = { ...camera.current };
+    await camera.punchAt({ x: 700, y: 400 }, instantCtx(), { amount: 1.2, hold: 40 });
+    assert.ok(Math.abs(camera.current.x - before.x) < 0.01 && Math.abs(camera.current.scale - before.scale) < 1e-9, 'a punch-in eases back out to the pan');
+    await camera.focus('a', { instant: true });
+    assert.ok(Math.abs(centreOf(camera, stage).x - 400) < 0.01, 'a new focus frames its target again');
+});
+
+test('an animation whose duration is NaN finishes instead of stalling playback', async () => {
+    const timeline = new Timeline();
+    const ctx = timeline.context(timeline.begin(), { fast: false, pace: 1 });
+    let progress = null;
+    await ctx.animate(Number.NaN, t => { progress = t; });
+    assert.equal(progress, 1);
+});
+
+test('a flat landing (zero height) doesn\'t rebound; a real one rebounds with finite flight times', async () => {
+    const actors = Object.create(Actors.prototype);
+    const flights = [];
+    actors.squash = async () => true;
+    actors.arc = async (_actor, _ctx, _take, { ms }) => {
+        flights.push(ms);
+        return true;
+    };
+    const actor = { pieces: [] };
+    await actors.rebound(actor, instantCtx(), 1, { count: 2, share: 0.36, height: 0, reference: { height: 0, ms: 900 } });
+    assert.deepEqual(flights, []);
+    await actors.rebound(actor, instantCtx(), 1, { count: 2, share: 0.36, height: 200, reference: { height: 200, ms: 900 } });
+    assert.equal(flights.length, 2);
+    assert.ok(flights.every(Number.isFinite) && flights[1] < flights[0], `rebounds get shorter: ${flights}`);
+});

@@ -10,14 +10,16 @@
 - **Characters (`actors`):** spheres, blocks, pills, and rings, alone or in labelled groups. They `spawn` (pop, drop, rise, fade), `move` (hop, bounce, roll, slide, float), `perch` on anything, and `leave`. Squash and stretch, contact shadows, a rolling surface, and a glossy, matte, or glass finish. A new move on an actor takes over smoothly, even mid-air.
 - **Director controls:** `bounces`, `bounciness`, `squash`, `finish`, and the phone's `corner`, `poolInset`, and `glow`, each with a default that already looks right.
 - **`confetti`**, a **`backdrop`** colour per film, chapter, or step, and **`cursor: false`** for touch-first films.
-- **`phone` surface:** a lock screen where notifications drop in, the assistant (Iris) lights the screen edge, listens (`ask`), and folds the pile into one summary (`summarize`), and the Screen Pool grows into live activities (`pool`: music, listening). An app screen (`"screen": "list"`) with switches (`toggle`) and taps (`tap`, with a touch ripple). Cards in liquid glass, light, or dark.
+- **`phone` surface:** a lock screen where notifications drop in, the assistant (Iris) lights the screen edge, listens (`ask`), and folds the pile into one summary (`summarize`), and the Screen Pool grows into live activities (`pool`: music, listening). An app screen (`"screen": "list"`) with switches (`toggle`; `"to": false` switches one off) and taps (`tap`, with a touch ripple). Cards in liquid glass, light, or dark.
 - **`ai-chat` file references:** a `neutral` look, `files`, `@id` references while typing (with a picker), highlighted names, `hover` previews (drawn charts, pages, and sheets, or a real image with `src`) that the camera can zoom into, and `"draft": true` with a later `send`.
 - **Templates:** `assistant-files` and `phone-feature`.
 - **Examples:** *Ask about your files* (GossipT) and *Less noise, more now* (Iris on a phone).
 - **AI guide:** a director's guide (story shape, camera grammar, characters, mood → settings, which template fits) and how to add a screen type.
-- **Export** embeds images that sit beside the clip, so the single HTML file still stands alone; the preview server serves them, and nothing outside the clip's folder.
+- **Export** embeds images that sit beside the clip, so the single HTML file still stands alone; the preview server serves them, and nothing outside the clip's folder (a symlink can't lead out of it). On any page, an image path resolves against the clip's URL.
 
 ### Fixed
+- The camera and the pointer no longer head for the corner of the stage when a step points at something that isn't showing yet, such as a row an `add` step is about to reveal. Focusing on one frames its screen instead.
+- The validator reports, rather than crashes on, `null` or other non-object entries in flow nodes, table rows, connectors, CRM buttons, chapters, and steps.
 - A CRM dropdown's options were clipped by the fields panel and never showed. A browser test now checks that no pop-up is clipped, in Chromium, WebKit, and Firefox.
 
 ### Changed

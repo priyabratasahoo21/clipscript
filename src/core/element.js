@@ -117,16 +117,17 @@ export function defineElement(tagName = 'cue-flick') {
             };
         }
 
+        /** The clip, and (when it was fetched) its URL, which relative image paths in it resolve against. */
         async #readClip(src) {
-            if (this.#clip) return this.#clip;
+            if (this.#clip) return { clip: this.#clip };
             const inline = this.querySelector('script[type="application/json"]');
-            if (inline) return JSON.parse(inline.textContent);
+            if (inline) return { clip: JSON.parse(inline.textContent) };
             if (src) {
                 const response = await fetch(src, { credentials: 'same-origin' });
                 if (!response.ok) throw new Error(`could not load ${src} (HTTP ${response.status})`);
-                return response.json();
+                return { clip: await response.json(), base: response.url || undefined };
             }
-            return null;
+            return { clip: null };
         }
 
         async #load() {
@@ -145,7 +146,7 @@ export function defineElement(tagName = 'cue-flick') {
             this.#player = null;
             const source = src ?? 'this clip';
             try {
-                const clip = await this.#readClip(src);
+                const { clip, base } = await this.#readClip(src);
                 if (token !== this.#loadToken || !clip) return;
                 const result = validateClip(clip);
                 if (!result.ok) {
@@ -154,7 +155,7 @@ export function defineElement(tagName = 'cue-flick') {
                     this.dispatchEvent(new CustomEvent('cueflick:error', { detail: { result }, bubbles: true, composed: true }));
                     return;
                 }
-                this.#player = new Player(this, mount, clip, this.#options());
+                this.#player = new Player(this, mount, clip, { ...this.#options(), base });
             } catch (error) {
                 if (token !== this.#loadToken) return;
                 mount.replaceChildren(errorPanel([{ path: '', message: error.message }], source));
