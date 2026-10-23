@@ -532,14 +532,22 @@ test('a bouncing ball stretches in the air, and each impact squashes less than t
                 const ball = document.querySelector('cue-flick')?.shadowRoot?.querySelector('.cf-actor-sphere');
                 const scale = ball && /scale\(([\d.]+), ([\d.]+)\)/.exec(ball.style.transform);
                 if (scale && ball.style.opacity === '1') out.push([performance.now() - start, Number(scale[1]), Number(scale[2])]);
-                await new Promise(resolve => setTimeout(resolve, 16));
+                // one sample per drawn frame, so the readings follow the animation rather than a timer
+                await new Promise(resolve => requestAnimationFrame(resolve));
             }
             return out;
         });
         const stretch = Math.max(...samples.map(([, , sy]) => sy));
         assert.ok(stretch > 1.1, `it stretches tall in the air (scaleY ${stretch})`);
-        const peaks = samples.filter((sample, i) => i > 0 && i < samples.length - 1 && sample[1] > 1.08
-            && sample[1] >= samples[i - 1][1] && sample[1] > samples[i + 1][1]).map(([, sx]) => sx);
+        const tops = samples.filter((sample, i) => i > 0 && i < samples.length - 1 && sample[1] > 1.08
+            && sample[1] >= samples[i - 1][1] && sample[1] > samples[i + 1][1]);
+        // under load one squash can read as two tops; tops this close together are one impact (a flight separates real ones)
+        const peaks = tops.reduce((merged, [time, sx]) => {
+            const last = merged.at(-1);
+            if (last && time - last.time < 150) Object.assign(last, { time, sx: Math.max(last.sx, sx) });
+            else merged.push({ time, sx });
+            return merged;
+        }, []).map(peak => peak.sx);
         // the first impact is the hardest squash; the two rebounds after it squash less each time
         const impacts = peaks.slice(peaks.indexOf(Math.max(...peaks)));
         assert.ok(impacts.length >= 3, `expected an impact and two rebounds, got squashes ${peaks}`);
